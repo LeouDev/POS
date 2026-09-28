@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
+import { Printable } from "@/components/printable";
 import { Receipt } from "@/components/receipt";
 import { Window } from "@/components/ui";
 import { describeError } from "@/lib/actions";
@@ -56,7 +57,9 @@ export default async function ReceiptPage(props: PageProps<"/sales/[id]">) {
     >
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="sunken flex justify-center !bg-[#7a7a7a] px-2 py-5">
-          <Receipt sale={sale} businessName={profile.business_name} currency={profile.currency} timezone={profile.timezone} />
+          <Printable>
+            <Receipt sale={sale} businessName={profile.business_name} currency={profile.currency} timezone={profile.timezone} />
+          </Printable>
         </div>
         <div className="flex flex-col gap-3">
           <fieldset className="groupbox">

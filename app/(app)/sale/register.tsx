@@ -18,6 +18,7 @@ import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { ConfirmDialog, Dialog } from "@/components/dialog";
+import { Printable } from "@/components/printable";
 import { Receipt } from "@/components/receipt";
 import { useToast } from "@/components/toast";
 import { cx, EmptyState } from "@/components/ui";
@@ -583,13 +584,15 @@ export function Register({
           {completed && (
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_180px]">
               <div className="sunken flex max-h-[60dvh] justify-center overflow-auto !bg-[#7a7a7a] p-4">
-                <Receipt
-                  sale={completed.sale}
-                  businessName={businessName}
-                  currency={currency}
-                  timezone={timezone}
-                  tendered={completed.tendered}
-                />
+                <Printable>
+                  <Receipt
+                    sale={completed.sale}
+                    businessName={businessName}
+                    currency={currency}
+                    timezone={timezone}
+                    tendered={completed.tendered}
+                  />
+                </Printable>
               </div>
               <div className="flex flex-col gap-2">
                 <div className="lcd px-2.5 py-1.5" role="status">

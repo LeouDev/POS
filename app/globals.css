@@ -480,24 +480,37 @@
   }
 }
 
+/* Printing: only the portalled receipt copy (components/printable.tsx) is laid out, so long
+   receipts flow onto more pages. Zero page margins drop the browser's date/URL header and footer
+   and give thermal rolls their full width; sizes are physical so 58 mm and 80 mm rolls both fit,
+   and on A4/Letter it prints as an 80 mm strip. */
+.print-copy {
+  display: none;
+}
+
 @media print {
+  @page {
+    margin: 0;
+  }
+  html,
   body {
+    height: auto;
     background: #fff;
   }
-  body * {
-    visibility: hidden;
+  body > :not(.print-copy) {
+    display: none !important;
   }
-  .print-area,
-  .print-area * {
-    visibility: visible;
+  .print-copy {
+    display: block;
   }
-  .print-area {
-    position: fixed;
-    inset: 0 auto auto 0;
+  .print-copy .receipt-paper {
+    width: 100%;
+    max-width: 80mm;
+    padding: 4mm 3mm 6mm;
+    font-size: 9pt;
+    line-height: 1.35;
+    background: none;
     -webkit-mask: none;
     mask: none;
-  }
-  dialog.win-dialog::backdrop {
-    display: none;
   }
 }

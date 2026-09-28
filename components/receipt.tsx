@@ -13,7 +13,7 @@ function Row({ left, right, bold }: { left: ReactNode; right: ReactNode; bold?: 
 
 const Rule = () => <div className="my-2.5 border-t border-dashed border-black" />;
 
-/** Till-roll receipt. Prints on its own via the .print-area rules in globals.css. */
+/** Till-roll receipt. Wrap it in <Printable> to make it the page that prints. */
 export function Receipt({
   sale,
   businessName,
@@ -29,7 +29,7 @@ export function Receipt({
 }) {
   const money = (n: number) => formatMoney(n, currency);
   return (
-    <div className="receipt-paper print-area w-[300px] max-w-full flex-none text-black">
+    <div className="receipt-paper w-[300px] max-w-full flex-none text-black">
       <div className="text-center text-[15px] font-bold break-words uppercase">{businessName}</div>
       <div className="text-center">Sales receipt</div>
       <Rule />
