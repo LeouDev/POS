@@ -1,0 +1,273 @@
+// Runs the Supabase migrations in an in-process Postgres (PGlite) with a stub of
+// Supabase's auth schema and API roles, then checks RLS and the sale/stock functions.
+import { before, test } from "node:test";
+import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { PGlite, type Transaction } from "@electric-sql/pglite";
+import type { SalesReport } from "../lib/database.types";
+
+const A = "00000000-0000-4000-8000-00000000000a";
+const B = "00000000-0000-4000-8000-00000000000b";
+
+// Mirrors what Supabase provides before any project migration runs, including the
+// cloud default privileges, so the migration's explicit revokes are exercised.
+const SUPABASE_STUB = `
+  create schema auth;
+  create table auth.users (id uuid primary key, email text);
+  create function auth.uid() returns uuid language sql stable as $$
+    select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
+  $$;
+  create role anon nologin;
+  create role authenticated nologin;
+  grant usage on schema public, auth to anon, authenticated;
+  alter default privileges in schema public grant all on tables to anon, authenticated;
+  alter default privileges in schema public grant all on functions to anon, authenticated;
+`;
+
+let db: PGlite;
+type Row = Record<string, unknown>;
+type Query = (sql: string, params?: unknown[]) => Promise<Row[]>;
+
+/** Runs fn as an API request would: one transaction, as `user` (null = anon). */
+function as<T>(user: string | null, fn: (q: Query) => Promise<T>): Promise<T> {
+  return db.transaction(async (tx: Transaction) => {
+    await tx.exec(`set local role ${user ? "authenticated" : "anon"}`);
+    if (user) await tx.query(`select set_config('request.jwt.claim.sub', $1, true)`, [user]);
+    return fn(async (sql, params) => (await tx.query<Row>(sql, params)).rows);
+  });
+}
+
+const one = async (p: Promise<Row[]>) => (await p)[0];
+const sell = (user: string, saleId: string, items: unknown, method = "cash", discount = 0) =>
+  as(user, (q) =>
+    one(q(`select * from complete_sale($1, $2::jsonb, $3, $4)`, [saleId, JSON.stringify(items), method, discount])),
+  );
+const stockOf = async (id: string) =>
+  Number((await one(as(A, (q) => q(`select stock_quantity from products where id = $1`, [id])))).stock_quantity);
+const countSales = async () =>
+  Number((await one(as(A, (q) => q(`select count(*)::int as n from sales`)))).n);
+
+let coffee: string;
+let bread: string;
+let saleId: string;
+
+before(async () => {
+  db = new PGlite();
+  await db.exec(SUPABASE_STUB);
+  const dir = join(process.cwd(), "supabase/migrations");
+  for (const file of readdirSync(dir).filter((f) => f.endsWith(".sql")).sort()) {
+    await db.exec(readFileSync(join(dir, file), "utf8"));
+  }
+  await db.query(`insert into auth.users (id, email) values ($1, 'a@test.local'), ($2, 'b@test.local')`, [A, B]);
+
+  await as(A, (q) =>
+    q(`insert into profiles (user_id, business_name, tax_rate, timezone) values ($1, 'A Store', 12, 'Asia/Manila')`, [A]),
+  );
+  await as(B, (q) => q(`insert into profiles (user_id, business_name) values ($1, 'B Store')`, [B]));
+  const drinks = await one(as(A, (q) => q(`insert into categories (name) values ('Drinks') returning id`)));
+  coffee = (await one(
+    as(A, (q) =>
+      q(`insert into products (name, sku, category_id, price, cost, stock_quantity, low_stock_threshold)
+         values ('Coffee', 'CF-1', $1, 50, 20, 10, 3) returning id`, [drinks.id]),
+    ),
+  )).id as string;
+  bread = (await one(
+    as(A, (q) => q(`insert into products (name, price, cost, stock_quantity) values ('Bread', 25.50, 10, 3) returning id`)),
+  )).id as string;
+});
+
+test("rows are isolated per user", async () => {
+  assert.equal((await as(B, (q) => q(`select * from products`))).length, 0);
+  assert.equal((await as(B, (q) => q(`select * from categories`))).length, 0);
+  assert.equal((await as(B, (q) => q(`select * from profiles`))).length, 1);
+  assert.equal((await as(B, (q) => q(`update products set name = 'hacked' returning id`))).length, 0);
+  assert.equal((await as(B, (q) => q(`delete from products returning id`))).length, 0);
+  await assert.rejects(
+    as(B, (q) => q(`insert into categories (user_id, name) values ($1, 'Mine now')`, [A])),
+    /row-level security/,
+  );
+});
+
+test("anonymous requests get nothing", async () => {
+  await assert.rejects(as(null, (q) => q(`select * from products`)), /permission denied/);
+  await assert.rejects(as(null, (q) => q(`select * from sales`)), /permission denied/);
+  await assert.rejects(
+    as(null, (q) => q(`select complete_sale(gen_random_uuid(), '[]'::jsonb, 'cash', 0)`)),
+    /permission denied/,
+  );
+});
+
+test("a product can't point at another user's category", async () => {
+  const other = await one(as(B, (q) => q(`insert into categories (name) values ('Snacks') returning id`)));
+  await assert.rejects(
+    as(A, (q) => q(`insert into products (name, price, category_id) values ('Chips', 1, $1)`, [other.id])),
+    /foreign key/,
+  );
+});
+
+test("stock and receipt counters can't be edited directly", async () => {
+  await assert.rejects(as(A, (q) => q(`update products set stock_quantity = 999 where id = $1`, [coffee])), /permission denied/);
+  await assert.rejects(as(A, (q) => q(`update profiles set last_receipt_number = 0`)), /permission denied/);
+  const moves = await as(A, (q) => q(`select type, quantity, notes from inventory_movements where product_id = $1`, [coffee]));
+  assert.deepEqual(moves, [{ type: "RESTOCK", quantity: 10, notes: "Opening stock" }]);
+});
+
+test("complete_sale records the sale, items, movements and stock in one go", async () => {
+  saleId = crypto.randomUUID();
+  const items = [
+    { product_id: coffee, quantity: 2 },
+    { product_id: bread, quantity: 1 },
+    { product_id: coffee, quantity: 1 }, // duplicate lines are merged
+  ];
+  const sale = await sell(A, saleId, items, "cash", 10);
+  // subtotal 3*50 + 25.50 = 175.50; less 10 = 165.50; 12% tax = 19.86
+  assert.equal(sale.receipt_number, "R-000001");
+  assert.equal(Number(sale.subtotal), 175.5);
+  assert.equal(Number(sale.discount), 10);
+  assert.equal(Number(sale.tax), 19.86);
+  assert.equal(Number(sale.total), 185.36);
+  assert.equal(sale.status, "completed");
+
+  const lines = await as(A, (q) =>
+    q(`select product_name, quantity, unit_price::float, unit_cost::float, subtotal::float
+       from sale_items where sale_id = $1 order by product_name`, [saleId]),
+  );
+  assert.deepEqual(lines, [
+    { product_name: "Bread", quantity: 1, unit_price: 25.5, unit_cost: 10, subtotal: 25.5 },
+    { product_name: "Coffee", quantity: 3, unit_price: 50, unit_cost: 20, subtotal: 150 },
+  ]);
+  assert.equal(await stockOf(coffee), 7);
+  assert.equal(await stockOf(bread), 2);
+  const moves = await as(A, (q) =>
+    q(`select quantity from inventory_movements where type = 'SALE' and reference_id = $1 order by quantity`, [saleId]),
+  );
+  assert.deepEqual(moves, [{ quantity: -3 }, { quantity: -1 }]);
+});
+
+test("retrying the same checkout doesn't sell twice", async () => {
+  const again = await sell(A, saleId, [{ product_id: coffee, quantity: 5 }]);
+  assert.equal(again.receipt_number, "R-000001");
+  assert.equal(await countSales(), 1);
+  assert.equal(await stockOf(coffee), 7);
+});
+
+test("a failed sale writes nothing", async () => {
+  await assert.rejects(
+    sell(A, crypto.randomUUID(), [{ product_id: coffee, quantity: 1 }, { product_id: bread, quantity: 5 }]),
+    /Not enough stock for Bread: 2 left, 5 in cart/,
+  );
+  assert.equal(await countSales(), 1);
+  assert.equal(await stockOf(coffee), 7);
+  assert.equal(await stockOf(bread), 2);
+  const profile = await one(as(A, (q) => q(`select last_receipt_number from profiles`)));
+  assert.equal(profile.last_receipt_number, 1);
+});
+
+test("complete_sale rejects bad input", async () => {
+  const id = () => crypto.randomUUID();
+  const line = [{ product_id: coffee, quantity: 1 }];
+  await assert.rejects(sell(A, id(), []), /cart is empty/);
+  await assert.rejects(sell(A, id(), [{ product_id: coffee, quantity: 0 }]), /quantity between 1 and 10000/);
+  await assert.rejects(sell(A, id(), line, "bitcoin"), /payment method/);
+  await assert.rejects(sell(A, id(), line, "cash", 51), /Discount must be between 0 and the subtotal/);
+  await assert.rejects(sell(A, id(), line, "cash", -1), /Discount must be between 0 and the subtotal/);
+  await assert.rejects(sell(B, id(), line), /no longer exists/); // B can't sell A's stock
+  await assert.rejects(sell(A, null as unknown as string, line), /Missing sale id/);
+});
+
+test("sales history is read-only through the API", async () => {
+  await assert.rejects(
+    as(A, (q) => q(`insert into sales (user_id, receipt_number, subtotal, total, payment_method) values ($1, 'X', 0, 0, 'cash')`, [A])),
+    /permission denied/,
+  );
+  await assert.rejects(as(A, (q) => q(`update sales set total = 0`)), /permission denied/);
+  await assert.rejects(as(A, (q) => q(`delete from sale_items`)), /permission denied/);
+  await assert.rejects(
+    as(A, (q) => q(`insert into inventory_movements (user_id, product_id, type, quantity) values ($1, $2, 'RESTOCK', 5)`, [A, coffee])),
+    /permission denied/,
+  );
+});
+
+test("editing a product doesn't change past sales", async () => {
+  await as(A, (q) => q(`update products set name = 'Latte', price = 99, cost = 40 where id = $1`, [coffee]));
+  const line = await one(as(A, (q) => q(`select product_name, unit_price::float from sale_items where product_id = $1`, [coffee])));
+  assert.deepEqual(line, { product_name: "Coffee", unit_price: 50 });
+  const sale = await one(as(A, (q) => q(`select total::float from sales where id = $1`, [saleId])));
+  assert.equal(sale.total, 185.36);
+});
+
+test("archived products can't be sold; sold products can't be deleted", async () => {
+  await assert.rejects(as(A, (q) => q(`delete from products where id = $1`, [coffee])), /foreign key/);
+  await as(A, (q) => q(`update products set is_active = false where id = $1`, [coffee]));
+  await assert.rejects(sell(A, crypto.randomUUID(), [{ product_id: coffee, quantity: 1 }]), /archived/);
+  await as(A, (q) => q(`update products set is_active = true where id = $1`, [coffee]));
+
+  const spare = await one(as(A, (q) => q(`insert into products (name, price, stock_quantity) values ('Spare', 1, 4) returning id`)));
+  await as(A, (q) => q(`delete from products where id = $1`, [spare.id]));
+  const left = await as(A, (q) => q(`select id from inventory_movements where product_id = $1`, [spare.id]));
+  assert.equal(left.length, 0);
+});
+
+test("adjust_stock restocks, sets counts and logs every change", async () => {
+  const restocked = await one(as(A, (q) => q(`select * from adjust_stock($1, 'RESTOCK', 10, 'Supplier delivery')`, [bread])));
+  assert.equal(restocked.stock_quantity, 12);
+  const counted = await one(as(A, (q) => q(`select * from adjust_stock($1, 'ADJUSTMENT', 11, 'Shelf count')`, [bread])));
+  assert.equal(counted.stock_quantity, 11);
+  const moves = await as(A, (q) =>
+    q(`select type, quantity, notes from inventory_movements where product_id = $1 and type <> 'SALE' order by created_at, quantity`, [bread]),
+  );
+  assert.deepEqual(moves.slice(-2), [
+    { type: "RESTOCK", quantity: 10, notes: "Supplier delivery" },
+    { type: "ADJUSTMENT", quantity: -1, notes: "Shelf count" },
+  ]);
+  await assert.rejects(as(A, (q) => q(`select adjust_stock($1, 'ADJUSTMENT', 11)`, [bread])), /already 11/);
+  await assert.rejects(as(A, (q) => q(`select adjust_stock($1, 'ADJUSTMENT', -1)`, [bread])), /between 0 and/);
+  await assert.rejects(as(A, (q) => q(`select adjust_stock($1, 'RESTOCK', 0)`, [bread])), /between 1 and/);
+  await assert.rejects(as(B, (q) => q(`select adjust_stock($1, 'RESTOCK', 5)`, [bread])), /Product not found/);
+});
+
+test("low stock flag follows the threshold", async () => {
+  const rows = await as(A, (q) => q(`select name, is_low_stock from products where is_active order by name`));
+  assert.deepEqual(rows, [
+    { name: "Bread", is_low_stock: false }, // 11 left, threshold 5
+    { name: "Latte", is_low_stock: false }, // 7 left, threshold 3
+  ]);
+  await sell(A, crypto.randomUUID(), [{ product_id: coffee, quantity: 4 }], "gcash");
+  const latte = await one(as(A, (q) => q(`select stock_quantity, is_low_stock from products where id = $1`, [coffee])));
+  assert.deepEqual(latte, { stock_quantity: 3, is_low_stock: true });
+});
+
+test("sales_report sums the period in the business timezone", async () => {
+  const today = (await one(as(A, (q) => q(`select sales_report('today') as r`)))).r as SalesReport;
+  // Sale 1: 185.36 (cost 70, net 165.50). Sale 2: 4 x 99 = 396 + 12% = 443.52 (cost 160, net 396).
+  assert.equal(today.transactions, 2);
+  assert.equal(today.revenue, 628.88);
+  assert.equal(today.cost, 230);
+  assert.equal(today.net_sales, 561.5);
+  assert.equal(today.profit, 331.5);
+  assert.equal(today.average, 314.44);
+  assert.equal(today.items_sold, 8);
+  assert.equal(today.timezone, "Asia/Manila");
+  assert.equal(today.series.length, 24);
+  const bucketed = today.series.reduce((sum, b) => sum + b.revenue, 0);
+  assert.ok(Math.abs(bucketed - 628.88) < 1e-9);
+  assert.deepEqual(today.by_payment.map((p) => p.method), ["gcash", "cash"]);
+  // Grouped by product, named after its most recent sale (Coffee was renamed Latte).
+  assert.deepEqual(
+    today.top_products.map((p) => [p.name, p.quantity]),
+    [["Latte", 7], ["Bread", 1]],
+  );
+
+  for (const [period, buckets] of [["7d", 7], ["week", 7]] as const) {
+    const r = (await one(as(A, (q) => q(`select sales_report($1) as r`, [period])))).r as { series: unknown[]; transactions: number };
+    assert.equal(r.series.length, buckets);
+    assert.equal(r.transactions, 2);
+  }
+  const month = (await one(as(A, (q) => q(`select sales_report('month') as r`)))).r as { series: unknown[] };
+  assert.ok(month.series.length >= 28 && month.series.length <= 31);
+
+  const other = (await one(as(B, (q) => q(`select sales_report('today') as r`)))).r as { transactions: number; revenue: number };
+  assert.deepEqual([other.transactions, other.revenue], [0, 0]);
+  await assert.rejects(as(A, (q) => q(`select sales_report('decade')`)), /Unknown report period/);
+});

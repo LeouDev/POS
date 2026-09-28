@@ -1,0 +1,504 @@
+@import "tailwindcss";
+
+/* KASSIX — Windows 98 look from the Tillworks theme: teal desktop, silver bevelled
+   windows, navy title bars, Silkscreen pixel type and green LCD readouts. */
+
+@theme {
+  --color-desktop: #008080;
+  --color-face: #c0c0c0;
+  --color-face-light: #dfdfdf;
+  --color-shade: #808080;
+  --color-navy: #000080;
+  --color-sky: #1084d0;
+  --color-brand: #c00000;
+  --color-maroon: #800000;
+  --color-ok: #008000;
+  --color-lcd: #39ff14;
+  --color-paper: #fffef6;
+  --color-folder: #e8c547;
+  --color-tip: #ffffe1;
+  --font-sans: Tahoma, Verdana, "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Courier New", ui-monospace, monospace;
+}
+
+@theme inline {
+  --font-pixel: var(--font-silkscreen), ui-monospace, monospace;
+  --font-lcd: var(--font-vt323), ui-monospace, monospace;
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    background: var(--color-desktop);
+    color: #000;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+  ::selection {
+    background: var(--color-navy);
+    color: #fff;
+  }
+  a {
+    color: var(--color-navy);
+  }
+  button,
+  select,
+  [role="button"] {
+    cursor: pointer;
+  }
+  :disabled {
+    cursor: default;
+  }
+  /* Bevelled scrollbars, as in the theme. */
+  ::-webkit-scrollbar {
+    width: 16px;
+    height: 16px;
+    background: #dfdfdf;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #c0c0c0;
+    border: 1px solid;
+    border-color: #fff #000 #000 #fff;
+    box-shadow: inset -1px -1px #808080;
+  }
+  ::-webkit-scrollbar-corner {
+    background: #c0c0c0;
+  }
+}
+
+@layer components {
+  /* Surfaces */
+  .window {
+    background: var(--color-face);
+    border: 1px solid;
+    border-color: #dfdfdf #000 #000 #dfdfdf;
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #fff;
+    padding: 3px;
+  }
+  .window-shadow {
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #fff, 4px 4px 0 rgb(0 0 0 / 0.3);
+  }
+  .titlebar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 24px;
+    padding: 2px 3px 2px 6px;
+    background: linear-gradient(90deg, #000080, #1084d0);
+    color: #fff;
+    font-weight: 700;
+    user-select: none;
+  }
+  .titlebar-button {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 18px;
+    background: var(--color-face);
+    color: #000;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    border: 1px solid;
+    border-color: #fff #000 #000 #fff;
+    box-shadow: inset -1px -1px #808080;
+  }
+  .raised {
+    border: 1px solid;
+    border-color: #fff #000 #000 #fff;
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #dfdfdf;
+  }
+  .sunken {
+    background: #fff;
+    border: 1px solid;
+    border-color: #808080 #fff #fff #808080;
+    box-shadow: inset 1px 1px #000;
+  }
+  .etched {
+    border: 1px solid #808080;
+    box-shadow: inset 1px 1px #fff, 1px 1px #fff;
+  }
+  .separator {
+    border-top: 1px solid #808080;
+    border-bottom: 1px solid #fff;
+  }
+  .groupbox {
+    border: 1px solid #808080;
+    box-shadow: inset 1px 1px #fff, 1px 1px #fff;
+    padding: 10px 12px 12px;
+    min-width: 0;
+  }
+  .groupbox > legend {
+    padding: 0 4px;
+    font-weight: 700;
+  }
+  .tab {
+    position: relative;
+    margin-bottom: -1px;
+    min-height: 34px;
+    padding: 5px 14px;
+    background: var(--color-face);
+    color: #000;
+    text-decoration: none;
+    border: 1px solid;
+    border-bottom: none;
+    border-color: #fff #000 #000 #fff;
+    box-shadow: inset -1px 0 #808080;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tab[aria-pressed="true"],
+  .tab[aria-current="page"] {
+    z-index: 1;
+    margin-top: -3px;
+    padding-bottom: 8px;
+    font-weight: 700;
+  }
+  .tab:focus-visible {
+    outline: 1px dotted #000;
+    outline-offset: -4px;
+  }
+  .tabpanel {
+    border: 1px solid;
+    border-color: #fff #000 #000 #fff;
+    box-shadow: inset -1px -1px #808080;
+    padding: 12px;
+  }
+
+  /* Buttons */
+  .btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 36px;
+    padding: 0 14px;
+    background: var(--color-face);
+    color: #000;
+    font: inherit;
+    white-space: nowrap;
+    border: 1px solid;
+    border-color: #fff #000 #000 #fff;
+    box-shadow: inset -1px -1px #808080, inset 1px 1px #dfdfdf;
+    user-select: none;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active:not(:disabled),
+  .btn[aria-pressed="true"],
+  .btn[aria-expanded="true"],
+  .btn[aria-current="page"] {
+    border-color: #000 #fff #fff #000;
+    box-shadow: inset 1px 1px #808080;
+  }
+  .btn:active:not(:disabled) > * {
+    transform: translate(1px, 1px);
+  }
+  .btn[aria-pressed="true"],
+  .btn[aria-current="page"] {
+    background-color: #dcdcdc;
+    background-image: repeating-conic-gradient(#fff 0 25%, #dcdcdc 0 50%);
+    background-size: 2px 2px;
+    font-weight: 700;
+  }
+  .btn:focus-visible {
+    outline: none;
+  }
+  .btn:focus-visible::after {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border: 1px dotted #000;
+    pointer-events: none;
+  }
+  .btn:disabled,
+  .btn[aria-disabled="true"] {
+    color: #808080;
+    text-shadow: 1px 1px #fff;
+  }
+  .btn-default {
+    outline: 1px solid #000;
+    outline-offset: 0;
+  }
+  .btn-default:focus-visible {
+    outline: 1px solid #000;
+  }
+  .btn-lg {
+    min-height: 44px;
+    padding: 0 18px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .btn-xl {
+    min-height: 56px;
+    font-size: 18px;
+    font-weight: 700;
+    border-width: 2px;
+    box-shadow: inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+  }
+  .btn-xl:active:not(:disabled) {
+    box-shadow: inset 2px 2px #808080;
+  }
+  .btn-sm {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+  .btn-icon {
+    min-width: 36px;
+    padding: 0;
+  }
+  .btn-danger {
+    color: var(--color-maroon);
+  }
+
+  /* Inputs */
+  .field {
+    display: block;
+    width: 100%;
+    min-height: 36px;
+    padding: 4px 8px;
+    background: #fff;
+    color: #000;
+    font: inherit;
+    font-size: 16px; /* avoids iOS zoom on focus */
+    border: 1px solid;
+    border-color: #808080 #fff #fff #808080;
+    box-shadow: inset 1px 1px #000;
+    border-radius: 0;
+  }
+  @media (min-width: 768px) {
+    .field {
+      font-size: 14px;
+    }
+  }
+  .field:focus-visible {
+    outline: 2px solid var(--color-navy);
+    outline-offset: 1px;
+  }
+  .field:disabled,
+  .field[readonly] {
+    background: #dfdfdf;
+  }
+  .field[aria-invalid="true"] {
+    box-shadow: inset 1px 1px #000, inset 0 0 0 2px #c00000;
+  }
+  select.field {
+    appearance: none;
+    padding-right: 30px;
+    background: #fff
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Crect width='20' height='20' fill='%23c0c0c0'/%3E%3Cpath d='M0 0h19v1H1v18H0z' fill='%23fff'/%3E%3Cpath d='M19 0h1v20H0v-1h19z' fill='%23000'/%3E%3Cpath d='M18 1h1v18H1v-1h17z' fill='%23808080'/%3E%3Cpath d='M6 8h8l-4 4z' fill='%23000'/%3E%3C/svg%3E")
+      no-repeat right 3px center / 22px calc(100% - 6px);
+  }
+  input[type="number"].field {
+    appearance: textfield;
+  }
+  .check {
+    appearance: none;
+    flex: none;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border: 1px solid;
+    border-color: #808080 #fff #fff #808080;
+    box-shadow: inset 1px 1px #000;
+  }
+  .check:checked {
+    background: #fff
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M2 5l3 3 5-6' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E")
+      center / 12px no-repeat;
+  }
+  .check:focus-visible {
+    outline: 1px dotted #000;
+    outline-offset: 2px;
+  }
+
+  /* Readouts and data */
+  .lcd {
+    background: #000;
+    color: var(--color-lcd);
+    font-family: var(--font-lcd);
+    line-height: 1;
+    padding: 4px 10px;
+    border: 1px solid;
+    border-color: #808080 #fff #fff #808080;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .listview {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+  }
+  .listview th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 4px 8px;
+    background: var(--color-face);
+    font-weight: 400;
+    text-align: left;
+    white-space: nowrap;
+    border: 1px solid;
+    border-color: #fff #808080 #808080 #fff;
+  }
+  .listview td {
+    padding: 7px 8px;
+    vertical-align: middle;
+  }
+  .listview tbody tr:nth-child(even) td {
+    background: #f4f4f4;
+  }
+  .listview tr[data-href] {
+    cursor: pointer;
+  }
+  .listview tr[data-href]:hover td,
+  .listview tr[data-href]:focus-within td {
+    background: var(--color-navy);
+    color: #fff;
+  }
+  .listview tr[data-href]:hover a,
+  .listview tr[data-href]:focus-within a {
+    color: #fff;
+  }
+  .statusbar {
+    display: flex;
+    gap: 2px;
+    padding-top: 3px;
+    font-size: 12px;
+  }
+  .statusbar > * {
+    min-width: 0;
+    padding: 2px 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border: 1px solid;
+    border-color: #808080 #fff #fff #808080;
+  }
+  .pixel {
+    font-family: var(--font-pixel);
+  }
+  .menu-item:hover,
+  .menu-item:focus-visible {
+    background: var(--color-navy);
+    color: #fff;
+    outline: none;
+  }
+
+  /* Loading placeholders: stepped blink, like an old CRT redraw. */
+  .skeleton {
+    background: #a8a8a8;
+    animation: skeleton-blink 1.1s steps(2, jump-none) infinite;
+  }
+  .progress-marquee {
+    height: 20px;
+    padding: 2px;
+    background: #fff;
+    border: 1px solid;
+    border-color: #808080 #fff #fff #808080;
+    box-shadow: inset 1px 1px #000;
+    overflow: hidden;
+  }
+  .progress-marquee > span {
+    display: block;
+    width: 40%;
+    height: 100%;
+    background: repeating-linear-gradient(90deg, #000080 0 10px, transparent 10px 12px);
+    animation: marquee 1.4s steps(12) infinite;
+  }
+  @keyframes skeleton-blink {
+    from {
+      opacity: 0.55;
+    }
+    to {
+      opacity: 0.9;
+    }
+  }
+  @keyframes marquee {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(250%);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton,
+    .progress-marquee > span {
+      animation: none;
+    }
+  }
+
+  /* Native <dialog> as a Win98 modal. */
+  dialog.win-dialog {
+    margin: auto;
+    padding: 0;
+    max-width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    background: transparent;
+    overflow: visible;
+  }
+  dialog.win-dialog::backdrop {
+    background: rgb(0 0 0 / 0.25);
+  }
+
+  /* Receipt paper with a torn bottom edge. */
+  .receipt-paper {
+    background: var(--color-paper);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.45;
+    padding: 18px 18px 28px;
+    -webkit-mask:
+      linear-gradient(#000, #000) top / 100% calc(100% - 8px) no-repeat,
+      radial-gradient(circle at 6px 8px, transparent 5px, #000 5.5px) bottom / 12px 8px repeat-x;
+    mask:
+      linear-gradient(#000, #000) top / 100% calc(100% - 8px) no-repeat,
+      radial-gradient(circle at 6px 8px, transparent 5px, #000 5.5px) bottom / 12px 8px repeat-x;
+  }
+}
+
+/* Bigger hit targets on touch screens. */
+@media (pointer: coarse) {
+  .btn {
+    min-height: 44px;
+  }
+  .btn-sm {
+    min-height: 40px;
+  }
+  .btn-icon {
+    min-width: 44px;
+  }
+  .field {
+    min-height: 44px;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: fixed;
+    inset: 0 auto auto 0;
+    -webkit-mask: none;
+    mask: none;
+  }
+  dialog.win-dialog::backdrop {
+    display: none;
+  }
+}
