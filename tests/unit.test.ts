@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { safeNext } from "../lib/actions";
 import { cartTotals, quickCashAmounts } from "../lib/cart";
 import { addDays, zonedDayStart } from "../lib/dates";
+import type { SalesReport } from "../lib/database.types";
+import { chartPoints, describePeriod } from "../lib/format";
 
 test("cart totals match complete_sale's rounding", () => {
   // Same numbers as the database test: 3 x 50 + 25.50, less 10, 12% tax.
@@ -39,4 +41,19 @@ test("redirect targets stay on this site", () => {
   assert.equal(safeNext("/\\evil.example"), "/dashboard");
   assert.equal(safeNext("https://evil.example"), "/dashboard");
   assert.equal(safeNext(undefined), "/dashboard");
+});
+
+test("report labels read the local bucket times as-is", () => {
+  const base = { timezone: "Asia/Manila", revenue: 0, tax: 0, discount: 0, net_sales: 0, cost: 0, profit: 0,
+    transactions: 0, items_sold: 0, average: 0, by_payment: [], top_products: [] };
+  const today = { ...base, period: "today", unit: "hour", from: "2026-09-29T00:00:00", to: "2026-09-30T00:00:00",
+    series: [{ at: "2026-09-29T00:00:00", revenue: 1, transactions: 1 }, { at: "2026-09-29T23:00:00", revenue: 2, transactions: 1 }] } as SalesReport;
+  assert.deepEqual(chartPoints(today).map((p) => [p.label, p.title]), [["12am", "12am – 1am"], ["11pm", "11pm – 12am"]]);
+  assert.equal(describePeriod(today), "Tuesday, September 29");
+
+  const week = { ...today, period: "week", unit: "day", from: "2026-09-28T00:00:00", to: "2026-10-05T00:00:00",
+    series: [{ at: "2026-09-28T00:00:00", revenue: 1, transactions: 1 }] } as SalesReport;
+  assert.deepEqual(chartPoints(week).map((p) => [p.label, p.title]), [["Mon 28", "Mon, Sep 28"]]);
+  assert.equal(describePeriod(week), "Mon, Sep 28 – Sun, Oct 4");
+  assert.equal(describePeriod({ ...week, period: "month", from: "2026-09-01T00:00:00", to: "2026-10-01T00:00:00" }), "September 2026");
 });

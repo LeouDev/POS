@@ -327,7 +327,6 @@
     padding: 4px 10px;
     border: 1px solid;
     border-color: #808080 #fff #fff #808080;
-    font-variant-numeric: tabular-nums;
     overflow-wrap: anywhere;
   }
   .listview {

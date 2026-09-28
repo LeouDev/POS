@@ -162,7 +162,7 @@ export function Lcd({ label, value, className }: { label: string; value: ReactNo
   return (
     <fieldset className={cx("groupbox !pt-1", className)}>
       <legend className="!font-normal">{label}</legend>
-      <div className="lcd text-right text-[34px] sm:text-[38px]">{value}</div>
+      <div className="lcd text-right text-[22px] sm:text-[34px] xl:text-[38px]">{value}</div>
     </fieldset>
   );
 }

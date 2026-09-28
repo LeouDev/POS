@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { describeError, MISSING_TABLES } from "@/lib/actions";
 import { isValidTimezone } from "@/lib/format";
-import type { Category, Profile, ProductWithCategory } from "@/lib/database.types";
+import type { Category, Profile, ProductWithCategory, ReportPeriod, SalesReport } from "@/lib/database.types";
 
 /** The signed-in user and a Supabase client acting as them. Redirects to /login otherwise. */
 export const getSession = cache(async () => {
@@ -62,3 +62,10 @@ export const getCategories = cache(async (): Promise<Category[]> => {
 
 /** First value of a search param as a string ("" when absent). */
 export const param = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
+
+export const getReport = cache(async (period: ReportPeriod): Promise<SalesReport> => {
+  const { supabase } = await getSession();
+  const { data, error } = await supabase.rpc("sales_report", { p_period: period });
+  if (error) throw new Error(describeError(error));
+  return data as unknown as SalesReport;
+});
