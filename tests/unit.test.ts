@@ -7,7 +7,7 @@ import { addDays, zonedDayStart } from "../lib/dates";
 test("cart totals match complete_sale's rounding", () => {
   // Same numbers as the database test: 3 x 50 + 25.50, less 10, 12% tax.
   const t = cartTotals([{ price: 50, quantity: 3 }, { price: 25.5, quantity: 1 }], 10, 12);
-  assert.deepEqual(t, { subtotal: 175.5, discount: 10, tax: 19.86, total: 185.36, discountValid: true });
+  assert.deepEqual(t, { subtotal: 175.5, discount: 10, tax: 19.86, total: 185.36 });
 
   // Half-cent tax rounds up, like Postgres round(numeric, 2).
   assert.equal(cartTotals([{ price: 0.25, quantity: 1 }], 0, 10).tax, 0.03);
@@ -15,13 +15,13 @@ test("cart totals match complete_sale's rounding", () => {
   assert.equal(cartTotals([{ price: 0.1, quantity: 3 }], 0, 0).total, 0.3);
   assert.equal(cartTotals([{ price: 19.99, quantity: 3 }], 0, 7.25).tax, 4.35);
 
-  assert.equal(cartTotals([{ price: 10, quantity: 1 }], 11, 0).discountValid, false);
   assert.equal(cartTotals([], 0, 12).total, 0);
 });
 
 test("quick cash buttons offer exact change and the next notes up", () => {
   assert.deepEqual(quickCashAmounts(187.36), [187.36, 200, 500, 1000]);
   assert.deepEqual(quickCashAmounts(200), [200, 500, 1000]);
+  assert.deepEqual(quickCashAmounts(145.6), [145.6, 150, 160, 200]);
 });
 
 test("calendar days start at local midnight in the shop's timezone", () => {

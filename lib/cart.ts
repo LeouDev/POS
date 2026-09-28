@@ -15,7 +15,6 @@ export function cartTotals(lines: CartLine[], discount: number, taxRate: number)
     discount: off / 100,
     tax: tax / 100,
     total: (taxable + tax) / 100,
-    discountValid: off >= 0 && off <= subtotal,
   };
 }
 
@@ -27,5 +26,5 @@ export function quickCashAmounts(total: number) {
     if (v > total) out.add(v);
     if (out.size >= 4) break;
   }
-  return [...out];
+  return [...out].sort((a, b) => a - b);
 }

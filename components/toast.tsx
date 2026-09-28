@@ -35,7 +35,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div
         aria-live="polite"
-        className="pointer-events-none fixed right-2 bottom-14 z-[70] flex w-[min(360px,calc(100vw-16px))] flex-col gap-2"
+        className="pointer-events-none fixed top-2 left-1/2 z-[70] flex w-[min(360px,calc(100vw-16px))] -translate-x-1/2 flex-col gap-2"
       >
         {toasts.map((t) => {
           const { title, icon: Icon, color } = TONES[t.tone];

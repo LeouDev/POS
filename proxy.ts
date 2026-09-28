@@ -33,6 +33,9 @@ export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
+  // Server actions check the session themselves and answer with a redirect the client understands.
+  if (request.headers.has("next-action")) return response;
+
   let redirectTo: URL | null = null;
   if (!signedIn && !isPublic) {
     redirectTo = new URL("/login", request.url);
