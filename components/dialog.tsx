@@ -2,6 +2,7 @@
 
 import { TriangleAlert } from "lucide-react";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { TitleBar } from "@/components/ui";
 
 type DialogProps = {
@@ -14,9 +15,13 @@ type DialogProps = {
   dismissible?: boolean;
 };
 
-/** Native <dialog> (focus trap, Esc, top layer) dressed as a Win98 window. Mounted only while open. */
+/**
+ * Native <dialog> (focus trap, Esc, top layer) dressed as a Win98 window. Mounted only while open
+ * (always after a click, so document exists), and portalled to <body> so it doesn't inherit
+ * text styles from wherever it was opened, like a centred empty state or a table cell.
+ */
 export function Dialog({ open, ...props }: DialogProps) {
-  return open ? <OpenDialog {...props} /> : null;
+  return open ? createPortal(<OpenDialog {...props} />, document.body) : null;
 }
 
 function OpenDialog({ onClose, title, children, footer, width = 480, dismissible = true }: Omit<DialogProps, "open">) {

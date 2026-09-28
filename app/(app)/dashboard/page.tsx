@@ -68,7 +68,13 @@ export default async function DashboardPage() {
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
           <fieldset className="groupbox">
             <legend>Sales, last 7 days</legend>
-            <SalesChart data={chartPoints(week)} currency={profile.currency} caption="Day" />
+            {week.transactions === 0 ? (
+              <div className="sunken">
+                <Empty>No sales in the last 7 days. The chart fills in as you sell.</Empty>
+              </div>
+            ) : (
+              <SalesChart data={chartPoints(week)} currency={profile.currency} caption="Day" />
+            )}
           </fieldset>
           <Panel title="Top sellers, last 7 days" icon={Trophy}>
             {week.top_products.length === 0 ? (

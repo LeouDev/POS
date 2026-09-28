@@ -82,7 +82,7 @@ export default async function SalesPage(props: PageProps<"/sales">) {
       status={
         <span className="flex-1">
           {count ?? 0} sale{count === 1 ? "" : "s"}
-          {filtered ? " match these filters" : " recorded"}
+          {filtered ? (count === 1 ? " matches these filters" : " match these filters") : " recorded"}
         </span>
       }
     >
