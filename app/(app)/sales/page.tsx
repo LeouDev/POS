@@ -1,6 +1,7 @@
 import { ReceiptText, Search, SearchX, ShoppingCart } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
 import { EmptyState, Pager, Window, withParams } from "@/components/ui";
 import { describeError } from "@/lib/actions";
@@ -32,10 +33,11 @@ export default async function SalesPage(props: PageProps<"/sales">) {
   if (isIsoDate(from)) query = query.gte("created_at", zonedDayStart(from, tz).toISOString());
   if (isIsoDate(to)) query = query.lt("created_at", zonedDayStart(addDays(to, 1), tz).toISOString());
   const { data: sales, count, error } = await query;
+  const current = { q, from, to, method: method ?? "" };
+  if (error?.code === "PGRST103") redirect(withParams("/sales", current, {})); // page past the end
   if (error) throw new Error(describeError(error));
 
   const filtered = Boolean(q || method || from || to);
-  const current = { q, from, to, method: method ?? "" };
   const pages = Math.ceil((count ?? 0) / PAGE_SIZE);
 
   return (

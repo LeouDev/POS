@@ -10,6 +10,7 @@ import { Field, fieldIds } from "@/components/ui";
 import type { Product } from "@/lib/database.types";
 import { adjustStockSchema, type AdjustStockInput } from "@/lib/schemas";
 import { adjustStock } from "./actions";
+import { safeCall } from "@/lib/actions";
 
 type Target = Pick<Product, "id" | "name" | "stock_quantity">;
 
@@ -41,7 +42,7 @@ function AdjustForm({ product, onDone }: { product: Target; onDone: () => void }
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
-    const result = await adjustStock(values);
+    const result = await safeCall(() => adjustStock(values));
     if (!result.ok) return setFormError(result.error);
     toast(`${product.name}: stock is now ${result.data.stock}.`);
     onDone();

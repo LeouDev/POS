@@ -154,7 +154,7 @@ export type Database = {
     Views: { [_ in never]: never };
     Functions: {
       complete_sale: {
-        Args: { p_sale_id: string; p_items: Json; p_payment_method: string; p_discount?: number };
+        Args: { p_sale_id: string; p_items: Json; p_payment_method: string; p_discount?: number; p_expected_total?: number | null };
         Returns: SaleRow;
       };
       adjust_stock: {

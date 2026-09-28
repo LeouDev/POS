@@ -13,7 +13,7 @@ import { checkoutSchema } from "@/lib/schemas";
 export async function checkout(input: unknown): Promise<ActionResult<SaleWithItems>> {
   const parsed = checkoutSchema.safeParse(input);
   if (!parsed.success) return invalid(parsed.error);
-  const { saleId, items, paymentMethod, discount } = parsed.data;
+  const { saleId, items, paymentMethod, discount, expectedTotal } = parsed.data;
 
   const { supabase } = await getSession();
   const { error } = await supabase.rpc("complete_sale", {
@@ -21,9 +21,11 @@ export async function checkout(input: unknown): Promise<ActionResult<SaleWithIte
     p_items: items.map((i) => ({ product_id: i.productId, quantity: i.quantity })),
     p_payment_method: paymentMethod,
     p_discount: discount,
+    p_expected_total: expectedTotal,
   });
-  if (error) return fail(describeError(error));
+  // Refresh even on failure: stale prices or stock are the usual reason a sale is refused.
   revalidatePath("/", "layout");
+  if (error) return fail(describeError(error));
 
   const { data: sale, error: loadError } = await supabase
     .from("sales")

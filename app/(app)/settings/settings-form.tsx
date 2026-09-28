@@ -8,6 +8,7 @@ import type { Profile } from "@/lib/database.types";
 import { CURRENCIES, formatMoney } from "@/lib/format";
 import { settingsSchema, type SettingsInput } from "@/lib/schemas";
 import { updateSettings } from "./actions";
+import { safeCall } from "@/lib/actions";
 
 export function SettingsForm({ profile, timezones }: { profile: Profile; timezones: string[] }) {
   const toast = useToast();
@@ -25,7 +26,7 @@ export function SettingsForm({ profile, timezones }: { profile: Profile; timezon
   const currency = useWatch({ control, name: "currency" });
 
   const onSubmit = handleSubmit(async (values) => {
-    const result = await updateSettings(values);
+    const result = await safeCall(() => updateSettings(values));
     if (!result.ok) return toast(result.error, "error");
     reset(values);
     toast("Settings saved.");

@@ -39,9 +39,9 @@ function as<T>(user: string | null, fn: (q: Query) => Promise<T>): Promise<T> {
 }
 
 const one = async (p: Promise<Row[]>) => (await p)[0];
-const sell = (user: string, saleId: string, items: unknown, method = "cash", discount = 0) =>
+const sell = (user: string, saleId: string, items: unknown, method = "cash", discount = 0, expected: number | null = null) =>
   as(user, (q) =>
-    one(q(`select * from complete_sale($1, $2::jsonb, $3, $4)`, [saleId, JSON.stringify(items), method, discount])),
+    one(q(`select * from complete_sale($1, $2::jsonb, $3, $4, $5)`, [saleId, JSON.stringify(items), method, discount, expected])),
   );
 const stockOf = async (id: string) =>
   Number((await one(as(A, (q) => q(`select stock_quantity from products where id = $1`, [id])))).stock_quantity);
@@ -148,6 +148,17 @@ test("complete_sale records the sale, items, movements and stock in one go", asy
 test("retrying the same checkout doesn't sell twice", async () => {
   const again = await sell(A, saleId, [{ product_id: coffee, quantity: 5 }]);
   assert.equal(again.receipt_number, "R-000001");
+  assert.equal(await countSales(), 1);
+  assert.equal(await stockOf(coffee), 7);
+});
+
+test("a sale is refused when prices changed after the register loaded", async () => {
+  // Register still shows the old coffee price (50): 1 x 50 + 12% = 56. Current price is also 50,
+  // so the matching total goes through the check; a stale total is rejected with nothing written.
+  await assert.rejects(
+    sell(A, crypto.randomUUID(), [{ product_id: coffee, quantity: 1 }], "card", 0, 44.8),
+    /Prices or tax changed since the register loaded. This sale now totals PHP 56.00/,
+  );
   assert.equal(await countSales(), 1);
   assert.equal(await stockOf(coffee), 7);
 });

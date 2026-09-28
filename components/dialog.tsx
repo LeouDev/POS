@@ -48,9 +48,12 @@ function OpenDialog({ onClose, title, children, footer, width = 480, dismissible
       className="win-dialog"
       style={{ width }}
       aria-labelledby={titleId}
-      onClose={onClose}
+      // React bubbles close/cancel through the component tree, so ignore ones from a nested dialog.
+      onClose={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
       onCancel={(e) => {
-        if (!dismissible) e.preventDefault();
+        if (e.target === e.currentTarget && !dismissible) e.preventDefault();
       }}
     >
       <div className="window window-shadow flex max-h-[calc(100dvh-16px)] flex-col">

@@ -17,6 +17,7 @@ import {
   setProductActive,
 } from "./actions";
 import { ProductDialog } from "./product-dialog";
+import { safeCall } from "@/lib/actions";
 
 export function NewProductButton({ categories, currency }: { categories: Category[]; currency: string }) {
   const [open, setOpen] = useState(false);
@@ -40,7 +41,7 @@ export function SampleProductsButton() {
       disabled={pending}
       onClick={() =>
         startTransition(async () => {
-          const result = await addSampleProducts();
+          const result = await safeCall(() => addSampleProducts());
           toast(result.ok ? "Added 9 sample products in 3 categories." : result.error, result.ok ? "success" : "error");
         })
       }
@@ -66,7 +67,7 @@ export function ProductsTable({
 
   async function toggleActive(p: ProductWithCategory) {
     setBusyId(p.id);
-    const result = await setProductActive(p.id, !p.is_active);
+    const result = await safeCall(() => setProductActive(p.id, !p.is_active));
     setBusyId(null);
     if (!result.ok) return toast(result.error, "error");
     toast(p.is_active ? `Archived ${p.name}. It's hidden from the register.` : `Restored ${p.name}.`);
@@ -74,15 +75,16 @@ export function ProductsTable({
 
   async function confirmDelete() {
     if (!deleting) return;
-    const result = await deleteProduct(deleting.id);
+    const target = deleting;
+    const result = await safeCall(() => deleteProduct(target.id));
+    setDeleting(null); // close first: toasts sit under an open modal's backdrop
     if (!result.ok) return toast(result.error, "error");
     toast(
       result.data.archived
-        ? `${deleting.name} has sales history, so it was archived instead of deleted.`
-        : `Deleted ${deleting.name}.`,
+        ? `${target.name} has sales history, so it was archived instead of deleted.`
+        : `Deleted ${target.name}.`,
       result.data.archived ? "info" : "success",
     );
-    setDeleting(null);
   }
 
   return (
@@ -195,11 +197,12 @@ export function CategoriesButton({ categories, counts }: { categories: Category[
 }
 
 function CategoryManager({ categories, counts }: { categories: Category[]; counts: Record<string, number> }) {
-  const toast = useToast();
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
   const [deleting, setDeleting] = useState<Category | null>(null);
+  // Shown inline: this lives in a modal, where toasts would sit under the backdrop.
+  const [listError, setListError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function add(e: FormEvent) {
@@ -207,21 +210,19 @@ function CategoryManager({ categories, counts }: { categories: Category[]; count
     const parsed = categoryNameSchema.safeParse(name);
     if (!parsed.success) return setError(parsed.error.issues[0].message);
     startTransition(async () => {
-      const result = await createCategory(parsed.data);
+      const result = await safeCall(() => createCategory(parsed.data));
       if (!result.ok) return setError(result.error);
       setError(null);
       setName("");
-      toast(`Added ${parsed.data}.`);
     });
   }
 
   function saveRename() {
     if (!renaming) return;
     startTransition(async () => {
-      const result = await renameCategory(renaming.id, renaming.name);
-      if (!result.ok) return toast(result.error, "error");
-      setRenaming(null);
-      toast("Category renamed.");
+      const result = await safeCall(() => renameCategory(renaming.id, renaming.name));
+      setListError(result.ok ? null : result.error);
+      if (result.ok) setRenaming(null);
     });
   }
 
@@ -253,6 +254,11 @@ function CategoryManager({ categories, counts }: { categories: Category[]; count
         )}
       </form>
 
+      {listError && (
+        <p role="alert" className="border border-brand bg-[#fff0f0] p-2 text-[13px]">
+          {listError}
+        </p>
+      )}
       <div className="sunken max-h-72 overflow-y-auto">
         {categories.length === 0 ? (
           <p className="p-4 text-center text-[13px] text-neutral-600">No categories yet. Add one above.</p>
@@ -313,9 +319,8 @@ function CategoryManager({ categories, counts }: { categories: Category[]; count
         confirmLabel="Delete"
         onConfirm={async () => {
           if (!deleting) return;
-          const result = await deleteCategory(deleting.id);
-          if (!result.ok) return toast(result.error, "error");
-          toast(`Deleted ${deleting.name}.`);
+          const result = await safeCall(() => deleteCategory(deleting.id));
+          setListError(result.ok ? null : result.error);
           setDeleting(null);
         }}
       >

@@ -1,6 +1,7 @@
 import { Boxes, History, PackageSearch, Search } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { FilterForm } from "@/components/filter-form";
 import { EmptyState, Pager, StockBadge, Window, withParams } from "@/components/ui";
 import { describeError } from "@/lib/actions";
@@ -191,9 +192,10 @@ async function MovementLog({ sp }: { sp: SearchParams }) {
   if (products.some((p) => p.id === productId)) query = query.eq("product_id", productId);
   if (type) query = query.eq("type", type);
   const { data: moves, count, error } = await query;
+  const current = { tab: "log", product: productId, type: type ?? "" };
+  if (error?.code === "PGRST103") redirect(withParams("/inventory", current, {})); // page past the end
   if (error) throw new Error(describeError(error));
 
-  const current = { tab: "log", product: productId, type: type ?? "" };
   const pages = Math.ceil((count ?? 0) / PAGE_SIZE);
 
   return (

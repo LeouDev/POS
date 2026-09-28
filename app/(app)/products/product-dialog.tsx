@@ -11,6 +11,7 @@ import type { Category, ProductWithCategory } from "@/lib/database.types";
 import { formatMoney } from "@/lib/format";
 import { productSchema, type ProductInput } from "@/lib/schemas";
 import { saveProduct } from "./actions";
+import { safeCall } from "@/lib/actions";
 
 export function ProductDialog({
   open,
@@ -65,7 +66,7 @@ function ProductForm({
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
-    const result = await saveProduct(product?.id ?? null, values);
+    const result = await safeCall(() => saveProduct(product?.id ?? null, values));
     if (!result.ok) {
       if (result.error.includes("SKU")) setError("sku", { message: result.error });
       else setFormError(result.error);

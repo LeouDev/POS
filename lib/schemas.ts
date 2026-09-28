@@ -80,5 +80,6 @@ export const checkoutSchema = z.object({
     .max(200, "That's too many different items for one sale"),
   paymentMethod: z.enum(PAYMENT_METHODS.map((m) => m.value) as ["cash", "card", "gcash", "other"]),
   discount: money("Enter a discount (0 for none)"),
+  expectedTotal: money("Missing total"),
 });
 export type CheckoutInput = z.infer<typeof checkoutSchema>;

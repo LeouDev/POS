@@ -9,6 +9,7 @@ import type { z } from "zod";
 import { Field, fieldIds, TitleBar } from "@/components/ui";
 import { signInSchema, signUpSchema } from "@/lib/schemas";
 import { signIn, signUp } from "./actions";
+import { safeCall } from "@/lib/actions";
 
 type Mode = "signin" | "signup";
 
@@ -91,7 +92,7 @@ function SignInForm({ next, linkError }: { next: string; linkError?: string }) {
 
   const onSubmit = handleSubmit(async (values) => {
     setError(null);
-    const result = await signIn(values, next);
+    const result = await safeCall(() => signIn(values, next));
     if (result && !result.ok) setError(result.error);
   });
 
@@ -141,7 +142,7 @@ function SignUpForm({ onSent }: { onSent: (email: string) => void }) {
 
   const onSubmit = handleSubmit(async (values) => {
     setError(null);
-    const result = await signUp(values);
+    const result = await safeCall(() => signUp(values));
     if (!result) return; // signed straight in and redirected
     if (!result.ok) setError(result.error);
     else if (result.data.confirmEmail) onSent(values.email);

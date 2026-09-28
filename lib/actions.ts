@@ -1,3 +1,4 @@
+import { unstable_rethrow } from "next/navigation";
 import type { ZodError } from "zod";
 
 export type ActionResult<T = null> = { ok: true; data: T } | { ok: false; error: string };
@@ -5,6 +6,16 @@ export type ActionResult<T = null> = { ok: true; data: T } | { ok: false; error:
 export const ok = <T>(data: T): ActionResult<T> => ({ ok: true, data });
 export const fail = (error: string): { ok: false; error: string } => ({ ok: false, error });
 export const invalid = (error: ZodError) => fail(error.issues[0]?.message ?? "Check the form and try again.");
+
+/** Calls a server action from the browser; a dropped connection becomes an error result, not a silent failure. */
+export async function safeCall<T>(action: () => Promise<ActionResult<T>>): Promise<ActionResult<T>> {
+  try {
+    return await action();
+  } catch (err) {
+    unstable_rethrow(err); // redirects (e.g. signed out) are navigation, not failures
+    return fail("Couldn't reach the server. Check your connection and try again.");
+  }
+}
 
 /** Only same-site paths, so ?next= can't bounce users to another site (incl. "//x" and "/\x"). */
 export function safeNext(next: unknown) {
