@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { describeError, MISSING_TABLES } from "@/lib/actions";
 import { isValidTimezone } from "@/lib/format";
-import type { Profile } from "@/lib/database.types";
+import type { Category, Profile, ProductWithCategory } from "@/lib/database.types";
 
 /** The signed-in user and a Supabase client acting as them. Redirects to /login otherwise. */
 export const getSession = cache(async () => {
@@ -43,3 +43,22 @@ export const getProfile = cache(async (): Promise<Profile> => {
   if (reloadError || !created) throw new Error(reloadError ? describeError(reloadError) : MISSING_TABLES);
   return created;
 });
+
+// ponytail: loads the whole catalogue in one request (PostgREST caps responses at 1,000 rows);
+// move filtering into the query and paginate if a shop ever carries more products than that.
+export const getProducts = cache(async (): Promise<ProductWithCategory[]> => {
+  const { supabase } = await getSession();
+  const { data, error } = await supabase.from("products").select("*, categories(name)").order("name").limit(1000);
+  if (error) throw new Error(describeError(error));
+  return data;
+});
+
+export const getCategories = cache(async (): Promise<Category[]> => {
+  const { supabase } = await getSession();
+  const { data, error } = await supabase.from("categories").select("*").order("name");
+  if (error) throw new Error(describeError(error));
+  return data;
+});
+
+/** First value of a search param as a string ("" when absent). */
+export const param = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";

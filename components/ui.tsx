@@ -1,4 +1,5 @@
-import type { LucideIcon } from "lucide-react";
+import { ChevronLeft, ChevronRight, type LucideIcon } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { stockStatus } from "@/lib/format";
 import type { Product } from "@/lib/database.types";
@@ -163,5 +164,36 @@ export function Lcd({ label, value, className }: { label: string; value: ReactNo
       <legend className="!font-normal">{label}</legend>
       <div className="lcd text-right text-[34px] sm:text-[38px]">{value}</div>
     </fieldset>
+  );
+}
+
+/** Builds a URL keeping the current filters, with some params replaced (empty values are dropped). */
+export function withParams(base: string, current: Record<string, string>, changes: Record<string, string | number>) {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries({ ...current, ...changes })) if (v !== "" && v !== undefined) qs.set(k, String(v));
+  const query = qs.toString();
+  return query ? `${base}?${query}` : base;
+}
+
+export function Pager({ page, pages, href }: { page: number; pages: number; href: (page: number) => string }) {
+  if (pages <= 1) return null;
+  const link = (target: number, label: string, icon: ReactNode, enabled: boolean) =>
+    enabled ? (
+      <Link href={href(target)} className="btn" aria-label={label}>
+        {icon}
+      </Link>
+    ) : (
+      <span className="btn" aria-disabled="true" aria-label={label}>
+        {icon}
+      </span>
+    );
+  return (
+    <nav aria-label="Pages" className="flex items-center justify-end gap-2 pt-3">
+      {link(page - 1, "Previous page", <ChevronLeft aria-hidden size={16} />, page > 1)}
+      <span className="text-[13px]">
+        Page {page} of {pages}
+      </span>
+      {link(page + 1, "Next page", <ChevronRight aria-hidden size={16} />, page < pages)}
+    </nav>
   );
 }

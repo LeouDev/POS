@@ -179,6 +179,7 @@ export type Sale = SaleRow;
 export type SaleItem = SaleItemRow;
 export type Movement = MovementRow;
 export type SaleWithItems = Sale & { sale_items: SaleItem[] };
+export type ProductWithCategory = Product & { categories: { name: string } | null };
 
 export type ReportPeriod = "today" | "7d" | "week" | "month";
 

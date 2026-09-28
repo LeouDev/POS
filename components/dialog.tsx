@@ -4,16 +4,7 @@ import { TriangleAlert } from "lucide-react";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { TitleBar } from "@/components/ui";
 
-/** Native <dialog> (focus trap, Esc, top layer) dressed as a Win98 window. */
-export function Dialog({
-  open,
-  onClose,
-  title,
-  children,
-  footer,
-  width = 480,
-  dismissible = true,
-}: {
+type DialogProps = {
   open: boolean;
   onClose: () => void;
   title: ReactNode;
@@ -21,14 +12,23 @@ export function Dialog({
   footer?: ReactNode;
   width?: number;
   dismissible?: boolean;
-}) {
+};
+
+/** Native <dialog> (focus trap, Esc, top layer) dressed as a Win98 window. Mounted only while open. */
+export function Dialog({ open, ...props }: DialogProps) {
+  return open ? <OpenDialog {...props} /> : null;
+}
+
+function OpenDialog({ onClose, title, children, footer, width = 480, dismissible = true }: Omit<DialogProps, "open">) {
   const ref = useRef<HTMLDialogElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
   const titleId = useId();
 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    if (open && !dialog.open) {
+    if (!dialog.open) {
+      opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       dialog.showModal();
       // showModal() would focus the × button; prefer [data-autofocus] or the first control.
       (
@@ -36,8 +36,11 @@ export function Dialog({
         dialog.querySelector<HTMLElement>(".dialog-body :is(input, select, textarea, button):not(:disabled)")
       )?.focus();
     }
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
+    // Once really unmounted (not StrictMode's rehearsal), hand focus back to whatever opened it.
+    return () => {
+      if (!dialog.isConnected) opener.current?.focus();
+    };
+  }, []);
 
   return (
     <dialog
@@ -45,25 +48,19 @@ export function Dialog({
       className="win-dialog"
       style={{ width }}
       aria-labelledby={titleId}
-      onClose={() => open && onClose()}
+      onClose={onClose}
       onCancel={(e) => {
         if (!dismissible) e.preventDefault();
       }}
     >
       <div className="window window-shadow flex max-h-[calc(100dvh-16px)] flex-col">
         <TitleBar title={title} id={titleId} as="h2">
-          <button
-            type="button"
-            className="titlebar-button"
-            aria-label="Close"
-            disabled={!dismissible}
-            onClick={onClose}
-          >
+          <button type="button" className="titlebar-button" aria-label="Close" disabled={!dismissible} onClick={onClose}>
             ×
           </button>
         </TitleBar>
-        {open && <div className="dialog-body min-h-0 overflow-auto p-3">{children}</div>}
-        {open && footer && <div className="flex flex-wrap justify-end gap-2 px-3 pb-3">{footer}</div>}
+        <div className="dialog-body min-h-0 overflow-auto p-3">{children}</div>
+        {footer && <div className="flex flex-wrap justify-end gap-2 px-3 pb-3">{footer}</div>}
       </div>
     </dialog>
   );
