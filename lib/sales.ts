@@ -33,10 +33,14 @@ export function filterSales<T extends Filterable<T>>(query: T, f: SalesFilters, 
   return q;
 }
 
+/** "2 x Iced Coffee; 1 x Ensaymada", like the receipt's lines (pass items in the order to show). */
+export const itemsSummary = (items: { product_name: string; quantity: number }[]) =>
+  items.map((i) => `${i.quantity} x ${i.product_name}`).join("; ");
+
 export type ExportSale = Pick<
   Sale,
   "receipt_number" | "created_at" | "subtotal" | "discount" | "tax" | "total" | "payment_method" | "status"
-> & { sale_items: { quantity: number; unit_cost: number }[] };
+> & { sale_items: { product_name: string; quantity: number; unit_cost: number }[] };
 
 const cents = (n: number) => Math.round(n * 100) / 100;
 
@@ -49,6 +53,7 @@ export function salesCsv(sales: ExportSale[], timezone: string, currency: string
     "Receipt no.",
     "Date",
     "Time",
+    "Products",
     "Items",
     money("Subtotal"),
     money("Discount"),
@@ -66,6 +71,7 @@ export function salesCsv(sales: ExportSale[], timezone: string, currency: string
       s.receipt_number,
       day.format(at),
       time.format(at),
+      itemsSummary(s.sale_items),
       s.sale_items.reduce((sum, i) => sum + i.quantity, 0),
       s.subtotal,
       s.discount,

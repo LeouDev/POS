@@ -85,7 +85,7 @@ test("import: products already in KASSIX are skipped, so re-importing is safe", 
   ]);
 });
 
-test("sales export: one row per sale in the business's timezone, profit as in Reports", () => {
+test("sales export: one row per sale with its products, in the business's timezone, profit as in Reports", () => {
   const csv = salesCsv(
     [
       {
@@ -98,8 +98,8 @@ test("sales export: one row per sale in the business's timezone, profit as in Re
         payment_method: "gcash",
         status: "completed",
         sale_items: [
-          { quantity: 2, unit_cost: 45 },
-          { quantity: 1, unit_cost: 20.55 },
+          { product_name: "Ensaymada", quantity: 1, unit_cost: 20.55 },
+          { product_name: "Iced Coffee", quantity: 2, unit_cost: 45 },
         ],
       },
       {
@@ -111,7 +111,7 @@ test("sales export: one row per sale in the business's timezone, profit as in Re
         total: 50,
         payment_method: "cash",
         status: "voided",
-        sale_items: [{ quantity: 1, unit_cost: 20 }],
+        sale_items: [{ product_name: "Coke, 1.5L", quantity: 1, unit_cost: 20 }],
       },
     ],
     "Asia/Manila",
@@ -121,9 +121,9 @@ test("sales export: one row per sale in the business's timezone, profit as in Re
     csv,
     "﻿" +
       [
-        "Receipt no.,Date,Time,Items,Subtotal (PHP),Discount (PHP),Tax (PHP),Total (PHP),Cost (PHP),Profit (PHP),Payment,Status",
-        "R-000012,2026-09-30,00:30,3,250,10,28.8,268.8,110.55,129.45,GCash,Completed",
-        "R-000013,2026-09-30,10:05,1,50,0,0,50,20,30,Cash,Voided",
+        "Receipt no.,Date,Time,Products,Items,Subtotal (PHP),Discount (PHP),Tax (PHP),Total (PHP),Cost (PHP),Profit (PHP),Payment,Status",
+        "R-000012,2026-09-30,00:30,1 x Ensaymada; 2 x Iced Coffee,3,250,10,28.8,268.8,110.55,129.45,GCash,Completed",
+        'R-000013,2026-09-30,10:05,"1 x Coke, 1.5L",1,50,0,0,50,20,30,Cash,Voided',
       ].join("\r\n") +
       "\r\n",
   );

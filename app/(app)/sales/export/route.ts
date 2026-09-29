@@ -12,8 +12,11 @@ export async function GET(request: NextRequest) {
   for (let from = 0; ; from += 1000) {
     const query = supabase
       .from("sales")
-      .select("receipt_number, created_at, subtotal, discount, tax, total, payment_method, status, sale_items(quantity, unit_cost)")
+      .select(
+        "receipt_number, created_at, subtotal, discount, tax, total, payment_method, status, sale_items(product_name, quantity, unit_cost)",
+      )
       .order("created_at", { ascending: false })
+      .order("product_name", { referencedTable: "sale_items" })
       .order("id")
       .range(from, from + 999); // PostgREST returns at most 1,000 rows per request
     const { data, error } = await filterSales(query, filters, profile.timezone);

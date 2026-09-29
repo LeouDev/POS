@@ -8,7 +8,7 @@ import { describeError } from "@/lib/actions";
 import { getProfile, getSession, param } from "@/lib/data";
 import { isIsoDate } from "@/lib/dates";
 import { formatDateTime, formatMoney, PAYMENT_METHODS, paymentLabel } from "@/lib/format";
-import { filterSales, salesFilters } from "@/lib/sales";
+import { filterSales, itemsSummary, salesFilters } from "@/lib/sales";
 
 export const metadata: Metadata = { title: "Sales" };
 
@@ -27,8 +27,11 @@ export default async function SalesPage(props: PageProps<"/sales">) {
 
   const query = supabase
     .from("sales")
-    .select("id, receipt_number, created_at, total, payment_method, status, sale_items(count)", { count: "exact" })
+    .select("id, receipt_number, created_at, total, payment_method, status, sale_items(product_name, quantity)", {
+      count: "exact",
+    })
     .order("created_at", { ascending: false })
+    .order("product_name", { referencedTable: "sale_items" })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
   const [{ data: sales, count, error }, profile] = await Promise.all([filterSales(query, filters, zone), profileLoad]);
   const tz = profile.timezone;
@@ -123,31 +126,37 @@ export default async function SalesPage(props: PageProps<"/sales">) {
                 <tr>
                   <th>Receipt</th>
                   <th>Date</th>
-                  <th className="hidden text-right sm:table-cell">Products</th>
+                  <th className="hidden sm:table-cell">Products</th>
                   <th className="hidden md:table-cell">Payment</th>
                   <th className="hidden md:table-cell">Status</th>
                   <th className="text-right">Total</th>
                 </tr>
               </thead>
               <tbody>
-                {sales.map((s) => (
-                  <tr key={s.id} data-href className="relative">
-                    <td className="font-mono font-bold">
-                      {/* Stretched link: the whole row opens the receipt. */}
-                      <Link href={`/sales/${s.id}`} className="text-inherit no-underline after:absolute after:inset-0">
-                        {s.receipt_number}
-                      </Link>
-                    </td>
-                    <td className="text-[13px]">
-                      {formatDateTime(s.created_at, tz)}
-                      <span className="block text-[12px] opacity-75 md:hidden">{paymentLabel(s.payment_method)}</span>
-                    </td>
-                    <td className="hidden text-right tabular-nums sm:table-cell">{s.sale_items[0]?.count ?? 0}</td>
-                    <td className="hidden md:table-cell">{paymentLabel(s.payment_method)}</td>
-                    <td className="hidden capitalize md:table-cell">{s.status}</td>
-                    <td className="text-right font-bold tabular-nums">{formatMoney(s.total, profile.currency)}</td>
-                  </tr>
-                ))}
+                {sales.map((s) => {
+                  const products = itemsSummary(s.sale_items);
+                  return (
+                    <tr key={s.id} data-href className="relative">
+                      <td className="font-mono font-bold">
+                        {/* Stretched link: the whole row opens the receipt. */}
+                        <Link href={`/sales/${s.id}`} className="text-inherit no-underline after:absolute after:inset-0">
+                          {s.receipt_number}
+                        </Link>
+                      </td>
+                      <td className="text-[13px]">
+                        {formatDateTime(s.created_at, tz)}
+                        <span className="block text-[12px] opacity-75 md:hidden">{paymentLabel(s.payment_method)}</span>
+                        <span className="block max-w-[52vw] truncate text-[12px] opacity-75 sm:hidden">{products}</span>
+                      </td>
+                      <td className="hidden max-w-72 truncate text-[13px] sm:table-cell" title={products}>
+                        {products}
+                      </td>
+                      <td className="hidden md:table-cell">{paymentLabel(s.payment_method)}</td>
+                      <td className="hidden capitalize md:table-cell">{s.status}</td>
+                      <td className="text-right font-bold tabular-nums">{formatMoney(s.total, profile.currency)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
