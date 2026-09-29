@@ -17,7 +17,12 @@ export default async function DashboardPage() {
     getProfile(),
     getReport("today"),
     getReport("7d"),
-    supabase.from("sales").select("id, receipt_number, created_at, total, payment_method").order("created_at", { ascending: false }).limit(6),
+    supabase
+      .from("sales")
+      .select("id, receipt_number, created_at, total, payment_method")
+      .eq("status", "completed")
+      .order("created_at", { ascending: false })
+      .limit(6),
     supabase
       .from("products")
       .select("id, name, stock_quantity, low_stock_threshold", { count: "exact" })

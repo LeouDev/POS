@@ -155,7 +155,10 @@ export default async function SalesPage(props: PageProps<"/sales">) {
                       </td>
                       <td className="text-[13px]">
                         {formatDateTime(s.created_at, tz)}
-                        <span className="block text-[12px] opacity-75 md:hidden">{paymentLabel(s.payment_method)}</span>
+                        <span className="block text-[12px] opacity-75 md:hidden">
+                          {paymentLabel(s.payment_method)}
+                          {s.status === "voided" && " · Voided"}
+                        </span>
                         <span className="block max-w-[52vw] truncate text-[12px] opacity-75 sm:hidden">{products}</span>
                       </td>
                       <td className="hidden max-w-72 truncate text-[13px] sm:table-cell" title={products}>
@@ -163,7 +166,9 @@ export default async function SalesPage(props: PageProps<"/sales">) {
                       </td>
                       <td className="hidden md:table-cell">{paymentLabel(s.payment_method)}</td>
                       <td className="hidden capitalize md:table-cell">{s.status}</td>
-                      <td className="text-right font-bold tabular-nums">{formatMoney(s.total, profile.currency)}</td>
+                      <td className={`text-right font-bold tabular-nums ${s.status === "voided" ? "line-through opacity-60" : ""}`}>
+                        {formatMoney(s.total, profile.currency)}
+                      </td>
                     </tr>
                   );
                 })}

@@ -4,7 +4,7 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type PaymentMethod = "cash" | "card" | "gcash" | "other";
-export type MovementType = "SALE" | "RESTOCK" | "ADJUSTMENT";
+export type MovementType = "SALE" | "RESTOCK" | "ADJUSTMENT" | "VOID";
 export type SaleStatus = "completed" | "voided";
 
 type ProfileRow = {
@@ -54,6 +54,8 @@ type SaleRow = {
   total: number;
   payment_method: PaymentMethod;
   status: SaleStatus;
+  voided_at: string | null;
+  void_reason: string | null;
   created_at: string;
 };
 
@@ -176,6 +178,10 @@ export type Database = {
     Functions: {
       complete_sale: {
         Args: { p_sale_id: string; p_items: Json; p_payment_method: string; p_discount?: number; p_expected_total?: number | null };
+        Returns: SaleRow;
+      };
+      void_sale: {
+        Args: { p_sale_id: string; p_reason: string };
         Returns: SaleRow;
       };
       adjust_stock: {

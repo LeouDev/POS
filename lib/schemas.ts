@@ -46,6 +46,12 @@ export const adjustStockSchema = z
   });
 export type AdjustStockInput = z.infer<typeof adjustStockSchema>;
 
+export const voidSaleSchema = z.object({
+  saleId: z.uuid(),
+  reason: z.string().trim().min(1, "Say why you're voiding this sale").max(150, "Use at most 150 characters"),
+});
+export type VoidSaleInput = z.infer<typeof voidSaleSchema>;
+
 export const settingsSchema = z.object({
   businessName: z.string().trim().min(1, "Enter your business name").max(100, "Keep it under 100 characters"),
   ownerName: z.string().trim().max(100, "Keep it under 100 characters"),

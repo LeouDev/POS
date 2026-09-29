@@ -115,8 +115,12 @@ password?* on the sign-in form emails a link to `/reset-password`.
   the products, rejects insufficient stock, computes prices/tax/totals server-side, writes the
   sale, its items and the inventory movements, and decrements stock. If anything fails, nothing
   is written. The client sends a per-checkout id, so a retried request can't record a sale twice.
-- Stock levels can only change through `complete_sale` and `adjust_stock` (restock / stock
-  count), so every change lands in the `inventory_movements` audit trail.
+- Stock levels can only change through `complete_sale`, `adjust_stock` (restock / stock
+  count) and `void_sale`, so every change lands in the `inventory_movements` audit trail.
+- A sale recorded by mistake is voided from its receipt page (*Void sale*, with a reason):
+  `void_sale` puts its items back into stock (VOID movements), marks it voided with when and why,
+  and it drops out of the dashboard and reports. It stays in Sales and the exports, marked Voided;
+  receipt numbers are never reused, and a void can't be undone.
 - Sale items store the product name, price and cost at the time of sale, so editing or
   archiving a product never changes history. Products that have been sold are archived instead
   of deleted.

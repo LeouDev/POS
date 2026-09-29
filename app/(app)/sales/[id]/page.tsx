@@ -10,6 +10,7 @@ import { describeError } from "@/lib/actions";
 import { getProfile, getSession } from "@/lib/data";
 import { formatDateTime, formatMoney, paymentLabel } from "@/lib/format";
 import { PrintButton } from "./print-button";
+import { VoidSaleButton } from "./void-sale";
 
 export const metadata: Metadata = { title: "Receipt" };
 
@@ -34,6 +35,7 @@ export default async function ReceiptPage(props: PageProps<"/sales/[id]">) {
   const cost = sale.sale_items.reduce((sum, i) => sum + i.unit_cost * i.quantity, 0);
   const units = sale.sale_items.reduce((sum, i) => sum + i.quantity, 0);
   const profit = sale.subtotal - sale.discount - cost;
+  const voided = sale.status === "voided";
 
   return (
     <Window
@@ -45,6 +47,7 @@ export default async function ReceiptPage(props: PageProps<"/sales/[id]">) {
             <ArrowLeft aria-hidden size={16} /> All sales
           </Link>
           <PrintButton />
+          {!voided && <VoidSaleButton sale={{ id: sale.id, receiptNumber: sale.receipt_number, units }} />}
           <div className="flex-1" />
           <Link href="/sale" className="btn">
             <ShoppingCart aria-hidden size={16} className="text-ok" /> New sale
@@ -70,6 +73,14 @@ export default async function ReceiptPage(props: PageProps<"/sales/[id]">) {
           </Printable>
         </div>
         <div className="flex flex-col gap-3">
+          {voided && (
+            <p role="status" className="border border-brand bg-[#fff0f0] p-2 text-[13px]">
+              <b>Voided</b>
+              {sale.voided_at && ` ${formatDateTime(sale.voided_at, profile.timezone)}`}
+              {sale.void_reason && `: ${sale.void_reason}`}. Its items went back into stock, and it doesn&apos;t count
+              in sales totals or reports.
+            </p>
+          )}
           <fieldset className="groupbox">
             <legend>Details</legend>
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[13px]">

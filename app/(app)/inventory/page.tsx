@@ -14,11 +14,12 @@ import { AdjustStockButton } from "./adjust-stock";
 export const metadata: Metadata = { title: "Inventory" };
 
 const PAGE_SIZE = 25;
-const MOVEMENT_TYPES: MovementType[] = ["SALE", "RESTOCK", "ADJUSTMENT"];
+const MOVEMENT_TYPES: MovementType[] = ["SALE", "RESTOCK", "ADJUSTMENT", "VOID"];
 const TYPE_STYLES: Record<MovementType, string> = {
   SALE: "bg-navy text-white",
   RESTOCK: "bg-ok text-white",
   ADJUSTMENT: "bg-folder text-black",
+  VOID: "bg-maroon text-white",
 };
 
 export default async function InventoryPage(props: PageProps<"/inventory">) {
@@ -217,12 +218,13 @@ async function MovementLog({ sp }: { sp: SearchParams }) {
           <option value="SALE">Sales</option>
           <option value="RESTOCK">Restocks</option>
           <option value="ADJUSTMENT">Adjustments</option>
+          <option value="VOID">Voided sales</option>
         </select>
       </FilterForm>
 
       {!moves?.length ? (
         <EmptyState icon={History} title="No stock changes recorded">
-          Sales, restocks and stock counts show up here as they happen.
+          Sales, restocks, stock counts and voided sales show up here as they happen.
         </EmptyState>
       ) : (
         <div className="sunken overflow-x-auto">
@@ -250,7 +252,7 @@ async function MovementLog({ sp }: { sp: SearchParams }) {
                     <b className="tabular-nums">{m.quantity > 0 ? `+${m.quantity}` : m.quantity}</b>
                   </td>
                   <td className="hidden sm:table-cell">
-                    {m.type === "SALE" && m.reference_id ? <Link href={`/sales/${m.reference_id}`}>{m.notes}</Link> : m.notes}
+                    {(m.type === "SALE" || m.type === "VOID") && m.reference_id ? <Link href={`/sales/${m.reference_id}`}>{m.notes}</Link> : m.notes}
                   </td>
                 </tr>
               ))}

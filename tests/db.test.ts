@@ -321,6 +321,8 @@ test("a lapsed account is locked until KASSIX Pro is paid", async () => {
   await as(D, (q) => q(`insert into profiles (user_id, business_name) values ($1, 'D Store')`, [D]));
   const soap = await one(as(D, (q) => q(`insert into products (name, price, stock_quantity) values ('Soap', 20, 5) returning id`)));
   assert.equal((await one(as(D, (q) => q(`select has_access() as ok`)))).ok, true);
+  const soapSale = crypto.randomUUID();
+  await sell(D, soapSale, [{ product_id: soap.id, quantity: 1 }]);
 
   // Trial runs out.
   await db.query(`update profiles set trial_ends_at = now() - interval '1 day' where user_id = $1`, [D]);
@@ -332,6 +334,7 @@ test("a lapsed account is locked until KASSIX Pro is paid", async () => {
     /trial has ended/,
   );
   await assert.rejects(as(D, (q) => q(`select adjust_stock($1, 'RESTOCK', 1)`, [soap.id])), /trial has ended/);
+  await assert.rejects(as(D, (q) => q(`select void_sale($1, 'mistake')`, [soapSale])), /trial has ended/);
 
   // Owners can't grant themselves time; only the webhook's service role can record payments.
   await assert.rejects(
@@ -357,4 +360,40 @@ test("paying during the trial adds the time after the trial", async () => {
   const after = await one(asService((q) => q(`select * from record_payment($1, 'yearly', 1490, 'cs_test_2')`, [A])));
   const gap = (Date.parse(String(after.paid_until)) - Date.parse(String(before.trial_ends_at))) / 86_400_000;
   assert.equal(Math.round(gap), 365);
+});
+
+test("voiding a sale puts its items back, logs why, and drops it from reports", async () => {
+  const report = async () => (await one(as(A, (q) => q(`select sales_report('today') as r`)))).r as SalesReport;
+  const tea = (await one(as(A, (q) => q(`insert into products (name, price, cost, stock_quantity) values ('Tea', 10, 4, 5) returning id`)))).id as string;
+  const before = await report();
+  const saleId = crypto.randomUUID();
+  const sale = await sell(A, saleId, [{ product_id: tea, quantity: 2 }], "cash");
+  assert.equal(await stockOf(tea), 3);
+  assert.equal((await report()).transactions, before.transactions + 1);
+
+  // The owner has to say why; other accounts and signed-out callers can't void it.
+  await assert.rejects(as(A, (q) => q(`select void_sale($1, '  ')`, [saleId])), /Say why/);
+  await assert.rejects(as(A, (q) => q(`select void_sale($1, $2)`, [saleId, "x".repeat(151)])), /Say why/);
+  await assert.rejects(as(B, (q) => q(`select void_sale($1, 'mistake')`, [saleId])), /doesn't exist/);
+  await assert.rejects(as(null, (q) => q(`select void_sale($1, 'mistake')`, [saleId])), /permission denied/);
+
+  const voided = await one(as(A, (q) => q(`select * from void_sale($1, ' Rang up twice ')`, [saleId])));
+  assert.equal(voided.status, "voided");
+  assert.equal(voided.void_reason, "Rang up twice");
+  assert.ok(voided.voided_at);
+  assert.equal(await stockOf(tea), 5);
+  const voidMoves = () =>
+    as(A, (q) => q(`select type, quantity, notes from inventory_movements where reference_id = $1 and type = 'VOID'`, [saleId]));
+  assert.deepEqual(await voidMoves(), [{ type: "VOID", quantity: 2, notes: `Void of ${sale.receipt_number}: Rang up twice` }]);
+
+  // Voiding again changes nothing.
+  assert.equal((await one(as(A, (q) => q(`select * from void_sale($1, 'again')`, [saleId])))).void_reason, "Rang up twice");
+  assert.equal(await stockOf(tea), 5);
+  assert.equal((await voidMoves()).length, 1);
+
+  // Reports count completed sales only; the history keeps the voided sale and its receipt number.
+  const after = await report();
+  assert.deepEqual([after.transactions, after.revenue], [before.transactions, before.revenue]);
+  assert.equal((await one(as(A, (q) => q(`select status from sales where id = $1`, [saleId])))).status, "voided");
+  await assert.rejects(as(A, (q) => q(`update sales set status = 'completed' where id = $1`, [saleId])), /permission denied/);
 });
