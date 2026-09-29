@@ -1,8 +1,10 @@
 /** Who runs KASSIX: shown on the public site, the policy pages and in emails. */
 export const BUSINESS = {
   name: "AIR/RALLY BOOKING SERVICES",
-  // Must match the registered business documents on file with PayMongo.
-  address: "[Registered business address]",
+  // As on the DTI Certificate of Business Name Registration (valid Aug 15, 2026 to Aug 15, 2031);
+  // PayMongo checks that the site's address matches the business documents.
+  address: "Cabancalan, City of Mandaue, Region VII (Central Visayas), Philippines",
+  dtiNumber: "8423908",
   email: "[support email]",
 };
 

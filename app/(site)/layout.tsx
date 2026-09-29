@@ -33,8 +33,8 @@ export default function SiteLayout({ children }: { children: ReactNode }) {
             <Link href="/refunds">Return &amp; Refund Policy</Link>
           </nav>
           <p>
-            KASSIX is operated by <b>{BUSINESS.name}</b>, {BUSINESS.address}. Questions?{" "}
-            <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a>
+            KASSIX is operated by <b>{BUSINESS.name}</b> (DTI Business Name No. {BUSINESS.dtiNumber}),{" "}
+            {BUSINESS.address}. Questions? <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a>
           </p>
           <p className="text-neutral-700">© 2026 {BUSINESS.name}. All rights reserved.</p>
         </div>

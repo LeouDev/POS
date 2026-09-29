@@ -15,6 +15,8 @@ export function LegalPage({ title, icon, children }: { title: string; icon: Luci
         <p>
           {BUSINESS.name}
           <br />
+          DTI Business Name No. {BUSINESS.dtiNumber}
+          <br />
           {BUSINESS.address}
           <br />
           <a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a>
