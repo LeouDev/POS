@@ -9,7 +9,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { signOut } from "@/app/login/actions";
 import { cx, TitleBar } from "@/components/ui";
@@ -17,7 +19,7 @@ import { describeError } from "@/lib/actions";
 import type { Payment, Profile } from "@/lib/database.types";
 import { getProfile, getSession, param } from "@/lib/data";
 import { formatDateTime, formatMoney } from "@/lib/format";
-import { CHECKOUT_METHODS } from "@/lib/paymongo";
+import { CHECKOUT_COOKIE, CHECKOUT_METHODS, confirmCheckout } from "@/lib/paymongo";
 import { accessEndsAt, hasAccess, isPro, PLANS, TRIAL_DAYS, trialDaysLeft } from "@/lib/trial";
 import { AutoRefresh, PayButtons } from "./pay-buttons";
 
@@ -47,15 +49,31 @@ function planState(profile: Profile, payments: Payment[], checkoutAt: number, no
   };
 }
 
+/** Back from PayMongo before its webhook: ask PayMongo directly whether the owner's checkout is paid. */
+async function confirmWithPayMongo(userId: string, payments: Payment[]) {
+  const sessionId = (await cookies()).get(CHECKOUT_COOKIE)?.value;
+  // Already recorded (e.g. an older checkout): nothing new to confirm, and no redirect loop.
+  if (!sessionId || payments.some((p) => p.checkout_session_id === sessionId)) return false;
+  try {
+    return await confirmCheckout(sessionId, userId);
+  } catch (err) {
+    console.error("[paymongo] couldn't confirm checkout", sessionId, err);
+    return false; // the webhook still records it
+  }
+}
+
 /** KASSIX Pro: plan status and payments. The (app) layout sends owners here once their time runs out. */
 export default async function BillingPage(props: PageProps<"/billing">) {
-  const [{ email }, profile, payments, { checkout }] = await Promise.all([
+  const [{ email, userId }, profile, payments, { checkout }] = await Promise.all([
     getSession(),
     getProfile(),
     getPayments(),
     props.searchParams,
   ]);
-  const s = planState(profile, payments, Number(param(checkout)));
+  const checkoutAt = Number(param(checkout));
+  const s = planState(profile, payments, checkoutAt);
+  // Recorded just now: reload so the new end date and payment show.
+  if (s.confirming && (await confirmWithPayMongo(userId, payments))) redirect(`/billing?checkout=${checkoutAt}`);
   const date = (iso: string) => formatDateTime(iso, profile.timezone, "date");
   const daysLeft = `${s.days} day${s.days === 1 ? "" : "s"} left`;
 

@@ -131,8 +131,11 @@ test("every account gets a 60-day trial that owners can't change", async () => {
     /permission denied/,
   );
   await as(C, (q) => q(`insert into profiles (user_id, business_name, timezone) values ($1, 'C Store', 'UTC')`, [C]));
-  const c = await one(as(C, (q) => q(`select extract(day from trial_ends_at - now())::int as d from profiles`)));
-  assert.equal(c.d, 59); // 59 days 23:59:59… a moment after creation
+  // A moment after creation: 60 days minus however long that took (0 when PGlite's clock hasn't ticked).
+  const c = await one(
+    as(C, (q) => q(`select trial_ends_at - now() between interval '59 days 23 hours' and interval '60 days' as ok from profiles`)),
+  );
+  assert.equal(c.ok, true);
 });
 
 test("stock and receipt counters can't be edited directly", async () => {

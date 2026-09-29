@@ -45,6 +45,9 @@ its days after the account's current end date (`profiles.paid_until`), so paying
   signature and calls `record_payment()` with the Supabase secret key. It's idempotent per checkout
   session, so PayMongo's retries never add time twice. Owners can read their payment history but
   can't write it.
+- **Safety net:** when an owner comes back from checkout and the webhook hasn't landed yet, `/billing`
+  asks PayMongo directly about their latest checkout (its id is kept in an httpOnly cookie) and records
+  it if it's paid. A late or misconfigured webhook never leaves a paying owner stuck on "Confirming".
 
 Setup:
 
