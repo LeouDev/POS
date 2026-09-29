@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FilterForm } from "@/components/filter-form";
 import { EmptyState, Window } from "@/components/ui";
 import { getCategories, getProducts, getProfile, param } from "@/lib/data";
+import { ImportProductsButton } from "./import-dialog";
 import { CategoriesButton, NewProductButton, ProductsTable, SampleProductsButton } from "./products-client";
 
 export const metadata: Metadata = { title: "Products" };
@@ -36,6 +37,7 @@ export default async function ProductsPage(props: PageProps<"/products">) {
         <>
           <NewProductButton categories={categories} currency={profile.currency} />
           <CategoriesButton categories={categories} counts={counts} />
+          <ImportProductsButton />
           <FilterForm key={JSON.stringify(sp)} action="/products" className="flex flex-1 flex-wrap items-center justify-end gap-1.5">
             <input
               type="search"
@@ -81,11 +83,13 @@ export default async function ProductsPage(props: PageProps<"/products">) {
           action={
             <>
               <NewProductButton categories={categories} currency={profile.currency} />
+              <ImportProductsButton />
               <SampleProductsButton />
             </>
           }
         >
-          Add what you sell, with its price, cost and stock. Or load a few sample products to try the register.
+          Add what you sell, with its price, cost and stock, or import your list from a spreadsheet. Or load a few
+          sample products to try the register.
         </EmptyState>
       ) : shown.length === 0 ? (
         <EmptyState

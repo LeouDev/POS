@@ -93,6 +93,17 @@ With "Confirm email" on, an address can only have one account: signing up again 
 address shows "This email address already has a KASSIX account." Forgotten passwords: *Forgot
 password?* on the sign-in form emails a link to `/reset-password`.
 
+## Import and export
+
+- **Export sales:** *Export CSV* on the Sales page downloads the sales matching the current filters
+  (`/sales/export`), one row per sale with totals, cost and profit (as in Reports), in the business's
+  timezone.
+- **Import products:** *Import CSV* on the Products page reads a CSV (the downloadable template, or any
+  sheet with Name and Price columns; common header names like "Selling Price" or "Qty" work too),
+  previews what's ready and what to fix, and adds new products in one insert. Missing categories are
+  created. Products already in KASSIX (same SKU, or same name without a SKU) are skipped, never
+  overwritten, so stock still only changes through Inventory and importing a file twice is safe.
+
 ## How the data stays correct
 
 - Every table has Row Level Security; each user only sees and changes their own rows.

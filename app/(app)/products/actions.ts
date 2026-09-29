@@ -4,12 +4,32 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { describeError, fail, invalid, ok, type ActionResult } from "@/lib/actions";
 import { getSession } from "@/lib/data";
+import { importRowSchema, MAX_IMPORT_ROWS, planImport } from "@/lib/product-import";
 import { categoryNameSchema, productSchema } from "@/lib/schemas";
 
 const id = z.uuid();
 
 function refresh() {
   revalidatePath("/", "layout");
+}
+
+type Supabase = Awaited<ReturnType<typeof getSession>>["supabase"];
+
+/** Category ids by lower-cased name, creating any of `names` that don't exist yet. */
+async function ensureCategories(supabase: Supabase, names: string[]): Promise<Map<string, string> | { error: string }> {
+  const { data: existing, error: loadError } = await supabase.from("categories").select("id, name");
+  if (loadError) return { error: describeError(loadError) };
+  const byName = new Map(existing.map((c) => [c.name.toLowerCase(), c.id]));
+  const missing = [...new Map(names.map((n) => [n.toLowerCase(), n])).values()].filter((n) => !byName.has(n.toLowerCase()));
+  if (missing.length) {
+    const { data: created, error } = await supabase
+      .from("categories")
+      .insert(missing.map((name) => ({ name })))
+      .select("id, name");
+    if (error) return { error: describeError(error) };
+    for (const c of created) byName.set(c.name.toLowerCase(), c.id);
+  }
+  return byName;
 }
 
 export async function saveProduct(productId: string | null, input: unknown): Promise<ActionResult> {
@@ -114,19 +134,8 @@ const SAMPLES: Record<string, [name: string, sku: string, price: number, cost: n
 /** One-click starter catalogue for trying the register (offered only when there are no products). */
 export async function addSampleProducts(): Promise<ActionResult> {
   const { supabase } = await getSession();
-  const { data: existing, error: loadError } = await supabase.from("categories").select("id, name");
-  if (loadError) return fail(describeError(loadError));
-
-  const byName = new Map((existing ?? []).map((c) => [c.name.toLowerCase(), c.id]));
-  const missing = Object.keys(SAMPLES).filter((n) => !byName.has(n.toLowerCase()));
-  if (missing.length) {
-    const { data: created, error } = await supabase
-      .from("categories")
-      .insert(missing.map((name) => ({ name })))
-      .select("id, name");
-    if (error) return fail(describeError(error));
-    for (const c of created ?? []) byName.set(c.name.toLowerCase(), c.id);
-  }
+  const byName = await ensureCategories(supabase, Object.keys(SAMPLES));
+  if (!(byName instanceof Map)) return fail(byName.error);
 
   const rows = Object.entries(SAMPLES).flatMap(([category, items]) =>
     items.map(([name, sku, price, cost, stock, alertAt]) => ({
@@ -143,4 +152,48 @@ export async function addSampleProducts(): Promise<ActionResult> {
   if (error) return fail(describeError(error));
   refresh();
   return ok(null);
+}
+
+/**
+ * Adds products from an import file in one insert (all or nothing). Rows already in KASSIX are skipped
+ * rather than overwritten, so stock only ever changes through Inventory; opening stock is logged by
+ * the products_log_opening_stock trigger like any new product.
+ */
+export async function importProducts(
+  input: unknown,
+): Promise<ActionResult<{ imported: number; skipped: { name: string; reason: string }[] }>> {
+  const parsed = z
+    .array(importRowSchema)
+    .min(1, "There are no products to import.")
+    .max(MAX_IMPORT_ROWS, `Import at most ${MAX_IMPORT_ROWS} products at a time.`)
+    .safeParse(input);
+  if (!parsed.success) return invalid(parsed.error);
+  const { supabase } = await getSession();
+
+  const existing: { name: string; sku: string | null }[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase.from("products").select("name, sku").order("id").range(from, from + 999);
+    if (error) return fail(describeError(error));
+    existing.push(...data);
+    if (data.length < 1000) break;
+  }
+  const { create, skipped } = planImport(parsed.data, existing);
+  if (!create.length) return ok({ imported: 0, skipped });
+
+  const byName = await ensureCategories(supabase, create.flatMap((r) => (r.category ? [r.category] : [])));
+  if (!(byName instanceof Map)) return fail(byName.error);
+  const { error } = await supabase.from("products").insert(
+    create.map((r) => ({
+      name: r.name,
+      sku: r.sku || null,
+      category_id: r.category ? (byName.get(r.category.toLowerCase()) ?? null) : null,
+      price: r.price,
+      cost: r.cost,
+      stock_quantity: r.stockQuantity,
+      low_stock_threshold: r.lowStockThreshold,
+    })),
+  );
+  if (error) return fail(describeError(error));
+  refresh();
+  return ok({ imported: create.length, skipped });
 }
