@@ -28,7 +28,10 @@ const text = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 /** The business profile, created on first visit from the details given at sign-up. */
 export const getProfile = cache(async (): Promise<Profile> => {
   const { supabase, userId, email, metadata } = await getSession();
-  const load = () => supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
+  // Its own AbortSignal opts this GET out of Next's fetch memoization; otherwise re-reading a profile
+  // this render just created returns the render's first, empty answer (new sign-ups saw the setup screen).
+  const load = () =>
+    supabase.from("profiles").select("*").eq("user_id", userId).abortSignal(new AbortController().signal).maybeSingle();
 
   const { data, error } = await load();
   if (error) throw new Error(describeError(error));
