@@ -64,13 +64,21 @@ export const signInSchema = z.object({
   password: z.string().min(1, "Enter your password"),
 });
 
+const newPassword = z.string().min(8, "Use at least 8 characters").max(72, "Use at most 72 characters");
+
 export const signUpSchema = z.object({
   businessName: z.string().trim().min(1, "Enter your business name").max(100, "Keep it under 100 characters"),
   ownerName: z.string().trim().max(100, "Keep it under 100 characters"),
   email: z.email("Enter a valid email address"),
-  password: z.string().min(8, "Use at least 8 characters").max(72, "Use at most 72 characters"),
+  password: newPassword,
   timezone: z.string(),
 });
+
+export const resetRequestSchema = z.object({ email: z.email("Enter a valid email address") });
+
+export const newPasswordSchema = z
+  .object({ password: newPassword, confirm: z.string() })
+  .refine((v) => v.password === v.confirm, { path: ["confirm"], message: "The passwords don't match" });
 
 export const checkoutSchema = z.object({
   saleId: z.uuid(),

@@ -73,6 +73,26 @@ To try the lock, set a test account's `trial_ends_at` to a past date in the Supa
   date. Set `BREVO_API_KEY` and `EMAIL_FROM` (a sender verified in Brevo, see `.env.example`); without
   them the email is skipped and signing up works as usual.
 
+## Sign-up confirmation and password reset emails
+
+Supabase Auth sends these. Its built-in mailer only delivers to your Supabase team's own addresses
+and (on new free projects) can't use custom templates, so send them through Brevo instead:
+
+1. **Authentication → Emails → SMTP Settings:** enable custom SMTP with host `smtp-relay.brevo.com`,
+   port `587`, your Brevo SMTP login and an SMTP key (Brevo → SMTP & API → SMTP), sender
+   `kassix@air-rally.com`, name `KASSIX`.
+2. **Authentication → Emails → Templates:** paste `supabase/templates/confirm-signup.html` into
+   "Confirm signup" (subject: *Confirm your email for KASSIX*) and
+   `supabase/templates/reset-password.html` into "Reset password" (subject: *Reset your KASSIX
+   password*). Their links carry a `token_hash` that `/auth/callback` verifies, so they work even when
+   opened on another device.
+3. **Authentication → URL Configuration:** Site URL `https://kassix-pos.vercel.app` (the templates build
+   links from it), and `https://kassix-pos.vercel.app/**` under Redirect URLs.
+
+With "Confirm email" on, an address can only have one account: signing up again with a confirmed
+address shows "This email address already has a KASSIX account." Forgotten passwords: *Forgot
+password?* on the sign-in form emails a link to `/reset-password`.
+
 ## How the data stays correct
 
 - Every table has Row Level Security; each user only sees and changes their own rows.
