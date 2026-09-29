@@ -7,6 +7,8 @@ import { fail, invalid, ok, safeNext, type ActionResult } from "@/lib/actions";
 import { signInSchema, signUpSchema } from "@/lib/schemas";
 import { createClient } from "@/lib/supabase/server";
 
+const EXISTING_ACCOUNT = "This email address already has a KASSIX account. Sign in instead.";
+
 function authMessage(error: AuthError) {
   switch (error.code) {
     case "invalid_credentials":
@@ -15,7 +17,7 @@ function authMessage(error: AuthError) {
       return "Confirm your email first: open the link we sent to your inbox.";
     case "user_already_exists":
     case "email_exists":
-      return "An account with this email already exists. Sign in instead.";
+      return EXISTING_ACCOUNT;
     case "over_email_send_rate_limit":
     case "over_request_rate_limit":
       return "Too many attempts. Wait a minute and try again.";
@@ -52,6 +54,10 @@ export async function signUp(input: unknown): Promise<ActionResult<{ confirmEmai
     },
   });
   if (error) return fail(authMessage(error));
+  // One account per email. With "Confirm email" on, Supabase doesn't error for an address that already
+  // has a confirmed account: it returns a placeholder user with no identities and sends nothing.
+  // (An unconfirmed address gets a fresh confirmation email and a real user, so that case carries on.)
+  if (data.user && data.user.identities?.length === 0) return fail(EXISTING_ACCOUNT);
   if (data.session) redirect("/dashboard");
   return ok({ confirmEmail: true });
 }

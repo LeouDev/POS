@@ -52,6 +52,7 @@ export function describeError(error: DbError): string {
     case "PGRST205":
     case "42P01":
     case "PGRST202":
+      console.error("[db] missing table or function", error);
       return MISSING_TABLES;
   }
   console.error("[db]", error);

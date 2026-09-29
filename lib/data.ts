@@ -44,7 +44,11 @@ export const getProfile = cache(async (): Promise<Profile> => {
   if (insertError && insertError.code !== "23505") throw new Error(describeError(insertError));
 
   const { data: created, error: reloadError } = await load();
-  if (reloadError || !created) throw new Error(reloadError ? describeError(reloadError) : MISSING_TABLES);
+  if (reloadError || !created) {
+    // The page can only show generic setup help, so record what the database actually said.
+    console.error("[profile] couldn't read the profile after creating it", { userId, insertError, reloadError });
+    throw new Error(reloadError ? describeError(reloadError) : MISSING_TABLES);
+  }
   // This request created the business (first sign-in), so it alone sends the welcome email.
   if (!insertError) await welcomeAfterResponse(email, created);
   return created;
