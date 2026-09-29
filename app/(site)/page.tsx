@@ -66,8 +66,8 @@ const FEATURES: { icon: LucideIcon; color: string; title: string; text: string }
 
 const FAQ: { q: string; a: string }[] = [
   {
-    q: "Do I need special equipment?",
-    a: "No. Any computer, tablet or phone with internet works.",
+    q: "Do I need a new tablet?",
+    a: "No. KASSIX runs in the web browser of the tablet, phone or computer you already have: Android, iPhone, iPad, Windows or Mac. There's nothing to install, and you can add it to your home screen for one-tap access at the counter.",
   },
   {
     q: "What about receipts and a cash drawer?",
