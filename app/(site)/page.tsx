@@ -93,7 +93,8 @@ export default function HomePage() {
           <Sparkles aria-hidden size={16} className="flex-none" />
           <span className="flex-1">Welcome to KASSIX</span>
         </div>
-        <div className="grid gap-5 p-3 sm:p-5 md:grid-cols-[1fr_1.1fr] md:items-center">
+        {/* minmax(0, …) columns: Safari otherwise sizes the column to the 900px-wide logo and the page zooms out. */}
+        <div className="grid grid-cols-1 gap-5 p-3 sm:p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:items-center">
           <div className="flex flex-col gap-4">
             <div className="sunken bg-[#e6e4e0] p-2">
               <Image
@@ -151,7 +152,7 @@ export default function HomePage() {
 
       <section aria-labelledby="features-title" className="window">
         <TitleBar as="h2" id="features-title" title="What KASSIX does" icon={ShoppingCart} />
-        <ul className="grid gap-3 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-3">
           {FEATURES.map(({ icon: Icon, color, title, text }) => (
             <li key={title} className="flex gap-3">
               <span className="raised flex size-10 flex-none items-center justify-center bg-face">
@@ -169,7 +170,7 @@ export default function HomePage() {
       <section id="pricing" aria-labelledby="pricing-title" className="window scroll-mt-16">
         <TitleBar as="h2" id="pricing-title" title="Pricing" icon={Crown} />
         <div className="flex flex-col gap-3 p-3 sm:p-4">
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <fieldset className="groupbox flex flex-col gap-1.5">
               <legend>Free trial</legend>
               <p>
