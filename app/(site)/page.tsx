@@ -67,7 +67,7 @@ const FEATURES: { icon: LucideIcon; color: string; title: string; text: string }
 const FAQ: { q: string; a: string }[] = [
   {
     q: "Do I need a new tablet?",
-    a: "No. KASSIX runs in the web browser of the tablet, phone or computer you already have: Android, iPhone, iPad, Windows or Mac. There's nothing to install, and you can add it to your home screen for one-tap access at the counter.",
+    a: "No. KASSIX runs in the web browser of the tablet, phone or computer you already have: Android, iPhone, iPad, Windows or Mac. To use it like an app at the counter, choose Install app or Add to Home Screen in your browser's menu; it then opens full-screen from its own icon.",
   },
   {
     q: "What about receipts and a cash drawer?",

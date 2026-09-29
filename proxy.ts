@@ -52,5 +52,8 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.png|apple-icon.png|kassix-logo.webp|user-guide.html).*)"],
+  // Files browsers fetch without cookies (install manifest, icons) must never redirect to sign-in.
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|icon.png|icon-512.png|icon-maskable-512.png|apple-icon.png|manifest.webmanifest|kassix-logo.webp|user-guide.html).*)",
+  ],
 };

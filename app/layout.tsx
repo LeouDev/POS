@@ -9,6 +9,8 @@ const vt323 = VT323({ weight: "400", subsets: ["latin"], variable: "--font-vt323
 export const metadata: Metadata = {
   title: { default: "KASSIX", template: "%s · KASSIX" },
   description: "KASSIX point of sale for small businesses.",
+  // iPhone and iPad: a home-screen KASSIX opens full-screen, titled "KASSIX".
+  appleWebApp: { title: "KASSIX", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = { themeColor: "#008080" };
