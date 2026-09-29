@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { describeError, fail, invalid, ok, type ActionResult } from "@/lib/actions";
 import { getSession } from "@/lib/data";
-import { importRowSchema, MAX_IMPORT_ROWS, planImport } from "@/lib/product-import";
+import { importRowSchema, MAX_IMPORT_ROWS, planImport } from "@/lib/product-csv";
 import { categoryNameSchema, productSchema } from "@/lib/schemas";
 
 const id = z.uuid();

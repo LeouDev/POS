@@ -1,30 +1,20 @@
-import { Package, PackageSearch, Search } from "lucide-react";
+import { Download, Package, PackageSearch, Search } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { FilterForm } from "@/components/filter-form";
-import { EmptyState, Window } from "@/components/ui";
-import { getCategories, getProducts, getProfile, param } from "@/lib/data";
+import { EmptyState, Window, withParams } from "@/components/ui";
+import { filterProducts, getCategories, getProducts, getProfile, productFilters } from "@/lib/data";
 import { ImportProductsButton } from "./import-dialog";
 import { CategoriesButton, NewProductButton, ProductsTable, SampleProductsButton } from "./products-client";
 
 export const metadata: Metadata = { title: "Products" };
 
-const STATUSES = ["active", "archived", "all"] as const;
-
 export default async function ProductsPage(props: PageProps<"/products">) {
   const sp = await props.searchParams;
-  const q = param(sp.q).trim().slice(0, 50);
-  const category = param(sp.category);
-  const status = STATUSES.find((s) => s === param(sp.status)) ?? "active";
+  const filters = productFilters(sp);
+  const { q, category, status } = filters;
   const [products, categories, profile] = await Promise.all([getProducts(), getCategories(), getProfile()]);
-
-  const needle = q.toLowerCase();
-  const shown = products.filter(
-    (p) =>
-      (status === "all" || p.is_active === (status === "active")) &&
-      (!category || (category === "none" ? !p.category_id : p.category_id === category)) &&
-      (!needle || p.name.toLowerCase().includes(needle) || p.sku?.toLowerCase().includes(needle)),
-  );
+  const shown = filterProducts(products, filters);
   const counts: Record<string, number> = {};
   for (const p of products) if (p.category_id) counts[p.category_id] = (counts[p.category_id] ?? 0) + 1;
   const lowCount = products.filter((p) => p.is_active && p.is_low_stock).length;
@@ -38,6 +28,12 @@ export default async function ProductsPage(props: PageProps<"/products">) {
           <NewProductButton categories={categories} currency={profile.currency} />
           <CategoriesButton categories={categories} counts={counts} />
           <ImportProductsButton />
+          {shown.length > 0 && (
+            // A plain link: the route builds the file with the same filters as this list.
+            <a href={withParams("/products/export", filters, {})} download className="btn" title="These products as a CSV">
+              <Download aria-hidden size={16} /> Export CSV
+            </a>
+          )}
           <FilterForm key={JSON.stringify(sp)} action="/products" className="flex flex-1 flex-wrap items-center justify-end gap-1.5">
             <input
               type="search"

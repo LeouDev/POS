@@ -5,7 +5,7 @@ import { useState, useTransition, type ChangeEvent } from "react";
 import { Dialog } from "@/components/dialog";
 import { useToast } from "@/components/toast";
 import { safeCall } from "@/lib/actions";
-import { readImportFile, templateCsv, type ImportLine } from "@/lib/product-import";
+import { readImportFile, templateCsv, type ImportLine } from "@/lib/product-csv";
 import { importProducts } from "./actions";
 
 const TEMPLATE_HREF = `data:text/csv;charset=utf-8,${encodeURIComponent(templateCsv())}`;

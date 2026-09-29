@@ -99,6 +99,9 @@ password?* on the sign-in form emails a link to `/reset-password`.
   in the business's timezone: *Export sales* is one row per sale (products, totals, cost, profit as in
   Reports); *Export products sold* (`?rows=items`) is one row per product line with SKU, category,
   quantity, line total, cost and profit before discount (discounts apply to the whole sale).
+- **Export products:** *Export CSV* on the Products page (`/products/export`, same filters as the list)
+  uses the import template's columns plus Status and Stock value (stock × cost), so an exported list
+  can be imported into another account. Re-importing into the same account only adds new products.
 - **Import products:** *Import CSV* on the Products page reads a CSV (the downloadable template, or any
   sheet with Name and Price columns; common header names like "Selling Price" or "Qty" work too),
   previews what's ready and what to fix, and adds new products in one insert. Missing categories are

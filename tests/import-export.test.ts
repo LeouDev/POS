@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseCsv, toCsv } from "../lib/csv";
-import { planImport, readImportFile, templateCsv } from "../lib/product-import";
+import { planImport, productsCsv, readImportFile, templateCsv } from "../lib/product-csv";
+import type { ProductWithCategory } from "../lib/database.types";
 import { itemsCsv, salesCsv } from "../lib/sales";
 
 test("CSV reads what Excel and Google Sheets write", () => {
@@ -159,5 +160,29 @@ test("products-sold export: one row per product, with SKU, category and profit b
         "R-000012,2026-09-30,00:30,Iced Coffee,DRK-001,,2,95,190,90,100,Card,Completed",
       ].join("\r\n") +
       "\r\n",
+  );
+});
+
+test("product export: the import's columns plus status and stock value, and it imports back", () => {
+  const product = (p: Partial<ProductWithCategory>): ProductWithCategory => ({
+    id: "p", user_id: "u", category_id: null, name: "", sku: null, price: 0, cost: 0, stock_quantity: 0,
+    low_stock_threshold: 5, is_low_stock: false, is_active: true, created_at: "", updated_at: "", categories: null, ...p,
+  });
+  const csv = productsCsv([
+    product({ name: "Iced Coffee", sku: "DRK-001", category_id: "c", categories: { name: "Drinks" }, price: 120, cost: 45, stock_quantity: 40, low_stock_threshold: 10 }),
+    product({ name: "Old Bread, Big", price: 50, cost: 20.5, stock_quantity: 3, is_active: false }),
+  ]);
+  assert.equal(
+    csv,
+    "\uFEFFName,SKU,Category,Price,Cost,Stock,Low stock alert,Status,Stock value\r\n" +
+      "Iced Coffee,DRK-001,Drinks,120,45,40,10,Active,1800\r\n" +
+      '"Old Bread, Big",,,50,20.5,3,5,Archived,61.5\r\n',
+  );
+  assert.deepEqual(
+    readImportFile(csv).lines.map((l) => l.row),
+    [
+      { name: "Iced Coffee", sku: "DRK-001", category: "Drinks", price: 120, cost: 45, stockQuantity: 40, lowStockThreshold: 10 },
+      { name: "Old Bread, Big", sku: "", category: "", price: 50, cost: 20.5, stockQuantity: 3, lowStockThreshold: 5 },
+    ],
   );
 });

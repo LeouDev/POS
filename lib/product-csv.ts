@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { parseCsv, toCsv } from "@/lib/csv";
+import type { ProductWithCategory } from "@/lib/database.types";
 import { categoryNameSchema, productSchema } from "@/lib/schemas";
 
 export const MAX_IMPORT_ROWS = 1000;
@@ -23,12 +24,32 @@ const HEADERS: Record<Column, string[]> = {
   alert: ["low stock alert", "low stock alert at", "reorder level", "alert at"],
 };
 
+// The template's and the export's columns, so an exported list can be imported into another account.
+const COLUMN_TITLES = ["Name", "SKU", "Category", "Price", "Cost", "Stock", "Low stock alert"];
+
 /** The downloadable starting point: the headers plus two example rows to replace. */
 export const templateCsv = () =>
   toCsv([
-    ["Name", "SKU", "Category", "Price", "Cost", "Stock", "Low stock alert"],
+    COLUMN_TITLES,
     ["Iced Coffee", "DRK-001", "Drinks", 120, 45, 40, 10],
     ["Pandesal (10 pcs)", "", "Bakery", 50, 20, 20, 5],
+  ]);
+
+/** The product list in the import's columns, plus Status and Stock value (stock × cost), which import ignores. */
+export const productsCsv = (products: ProductWithCategory[]) =>
+  toCsv([
+    [...COLUMN_TITLES, "Status", "Stock value"],
+    ...products.map((p) => [
+      p.name,
+      p.sku ?? "",
+      p.categories?.name ?? "",
+      p.price,
+      p.cost,
+      p.stock_quantity,
+      p.low_stock_threshold,
+      p.is_active ? "Active" : "Archived",
+      Math.round(p.stock_quantity * p.cost * 100) / 100,
+    ]),
   ]);
 
 // "₱1,234.50" or "PHP 45" → a number; blank → the fallback (NaN makes the schema report it as missing).

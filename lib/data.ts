@@ -90,6 +90,28 @@ export const getCategories = cache(async (): Promise<Category[]> => {
 /** First value of a search param as a string ("" when absent). */
 export const param = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
+const PRODUCT_STATUSES = ["active", "archived", "all"] as const;
+export type ProductFilters = { q: string; category: string; status: (typeof PRODUCT_STATUSES)[number] };
+
+/** The Products page's filters from its search params (shared with the CSV export). */
+export function productFilters(sp: Record<string, string | string[] | undefined>): ProductFilters {
+  return {
+    q: param(sp.q).trim().slice(0, 50),
+    category: param(sp.category),
+    status: PRODUCT_STATUSES.find((s) => s === param(sp.status)) ?? "active",
+  };
+}
+
+export function filterProducts(products: ProductWithCategory[], { q, category, status }: ProductFilters) {
+  const needle = q.toLowerCase();
+  return products.filter(
+    (p) =>
+      (status === "all" || p.is_active === (status === "active")) &&
+      (!category || (category === "none" ? !p.category_id : p.category_id === category)) &&
+      (!needle || p.name.toLowerCase().includes(needle) || p.sku?.toLowerCase().includes(needle)),
+  );
+}
+
 export const getReport = cache(async (period: ReportPeriod): Promise<SalesReport> => {
   const { supabase } = await getSession();
   const { data, error } = await supabase.rpc("sales_report", { p_period: period });
