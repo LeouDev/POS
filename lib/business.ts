@@ -5,7 +5,7 @@ export const BUSINESS = {
   // PayMongo checks that the site's address matches the business documents.
   address: "Cabancalan, City of Mandaue, Region VII (Central Visayas), Philippines",
   dtiNumber: "8423908",
-  email: "[support email]",
+  email: "support@air-rally.com",
 };
 
 /** When the Terms, Privacy Policy and Refund Policy last changed. */
