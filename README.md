@@ -95,9 +95,10 @@ password?* on the sign-in form emails a link to `/reset-password`.
 
 ## Import and export
 
-- **Export sales:** *Export CSV* on the Sales page downloads the sales matching the current filters
-  (`/sales/export`), one row per sale with totals, cost and profit (as in Reports), in the business's
-  timezone.
+- **Export sales:** the Sales page downloads the sales matching the current filters (`/sales/export`),
+  in the business's timezone: *Export sales* is one row per sale (products, totals, cost, profit as in
+  Reports); *Export products sold* (`?rows=items`) is one row per product line with SKU, category,
+  quantity, line total, cost and profit before discount (discounts apply to the whole sale).
 - **Import products:** *Import CSV* on the Products page reads a CSV (the downloadable template, or any
   sheet with Name and Price columns; common header names like "Selling Price" or "Qty" work too),
   previews what's ready and what to fix, and adds new products in one insert. Missing categories are

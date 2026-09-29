@@ -80,10 +80,20 @@ export default async function SalesPage(props: PageProps<"/sales">) {
             </Link>
           )}
           {count ? (
-            // A plain link: the route streams the file with the same filters as this list.
-            <a href={withParams("/sales/export", current, {})} download className="btn" title="Download these sales as a spreadsheet (CSV)">
-              <Download aria-hidden size={16} /> Export CSV
-            </a>
+            // Plain links: the route builds the file with the same filters as this list.
+            <>
+              <a href={withParams("/sales/export", current, {})} download className="btn" title="One row per sale (CSV)">
+                <Download aria-hidden size={16} /> Export sales
+              </a>
+              <a
+                href={withParams("/sales/export", current, { rows: "items" })}
+                download
+                className="btn"
+                title="One row per product sold (CSV)"
+              >
+                <Download aria-hidden size={16} /> Export products sold
+              </a>
+            </>
           ) : null}
         </FilterForm>
       }

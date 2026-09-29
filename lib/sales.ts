@@ -37,18 +37,44 @@ export function filterSales<T extends Filterable<T>>(query: T, f: SalesFilters, 
 export const itemsSummary = (items: { product_name: string; quantity: number }[]) =>
   items.map((i) => `${i.quantity} x ${i.product_name}`).join("; ");
 
+type ExportItem = {
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  unit_cost: number;
+  subtotal: number;
+  products: { sku: string | null; categories: { name: string } | null } | null;
+};
+
+/** What the exports read: a sale with its items (the export route selects exactly this). */
 export type ExportSale = Pick<
   Sale,
   "receipt_number" | "created_at" | "subtotal" | "discount" | "tax" | "total" | "payment_method" | "status"
-> & { sale_items: { product_name: string; quantity: number; unit_cost: number }[] };
+> & { sale_items: ExportItem[] };
+
+// One literal (not concatenated) so supabase-js can type the rows from it.
+export const EXPORT_COLUMNS =
+  "receipt_number, created_at, subtotal, discount, tax, total, payment_method, status, sale_items(product_name, quantity, unit_price, unit_cost, subtotal, products(sku, categories(name)))";
 
 const cents = (n: number) => Math.round(n * 100) / 100;
 
-/** One row per sale, amounts as plain numbers so spreadsheets can add them up. Profit is as in Reports. */
-export function salesCsv(sales: ExportSale[], timezone: string, currency: string) {
+function exportFormat(timezone: string, currency: string) {
   const day = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" });
   const time = new Intl.DateTimeFormat("en-GB", { timeZone: timezone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
-  const money = (label: string) => `${label} (${currency})`;
+  return {
+    when: (iso: string) => [day.format(new Date(iso)), time.format(new Date(iso))],
+    money: (label: string) => `${label} (${currency})`,
+    status: (s: Pick<Sale, "status">) => (s.status === "voided" ? "Voided" : "Completed"),
+  };
+}
+
+/** One row per sale, amounts as plain numbers so spreadsheets can add them up. Profit is as in Reports. */
+export function salesCsv(
+  sales: (Omit<ExportSale, "sale_items"> & { sale_items: Pick<ExportItem, "product_name" | "quantity" | "unit_cost">[] })[],
+  timezone: string,
+  currency: string,
+) {
+  const { when, money, status } = exportFormat(timezone, currency);
   const header = [
     "Receipt no.",
     "Date",
@@ -65,12 +91,10 @@ export function salesCsv(sales: ExportSale[], timezone: string, currency: string
     "Status",
   ];
   const rows = sales.map((s) => {
-    const at = new Date(s.created_at);
     const cost = cents(s.sale_items.reduce((sum, i) => sum + i.quantity * i.unit_cost, 0));
     return [
       s.receipt_number,
-      day.format(at),
-      time.format(at),
+      ...when(s.created_at),
       itemsSummary(s.sale_items),
       s.sale_items.reduce((sum, i) => sum + i.quantity, 0),
       s.subtotal,
@@ -80,8 +104,51 @@ export function salesCsv(sales: ExportSale[], timezone: string, currency: string
       cost,
       cents(s.subtotal - s.discount - cost),
       paymentLabel(s.payment_method),
-      s.status === "voided" ? "Voided" : "Completed",
+      status(s),
     ];
   });
+  return toCsv([header, ...rows]);
+}
+
+/**
+ * One row per product sold, for totals by product or category. A discount applies to the whole sale,
+ * so line profit is before discount, as in Reports' best sellers.
+ */
+export function itemsCsv(sales: ExportSale[], timezone: string, currency: string) {
+  const { when, money, status } = exportFormat(timezone, currency);
+  const header = [
+    "Receipt no.",
+    "Date",
+    "Time",
+    "Product",
+    "SKU",
+    "Category",
+    "Quantity",
+    money("Unit price"),
+    money("Line total"),
+    money("Cost"),
+    money("Profit before discount"),
+    "Payment",
+    "Status",
+  ];
+  const rows = sales.flatMap((s) =>
+    s.sale_items.map((i) => {
+      const cost = cents(i.quantity * i.unit_cost);
+      return [
+        s.receipt_number,
+        ...when(s.created_at),
+        i.product_name,
+        i.products?.sku ?? "",
+        i.products?.categories?.name ?? "",
+        i.quantity,
+        i.unit_price,
+        i.subtotal,
+        cost,
+        cents(i.subtotal - cost),
+        paymentLabel(s.payment_method),
+        status(s),
+      ];
+    }),
+  );
   return toCsv([header, ...rows]);
 }

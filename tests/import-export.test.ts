@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { parseCsv, toCsv } from "../lib/csv";
 import { planImport, readImportFile, templateCsv } from "../lib/product-import";
-import { salesCsv } from "../lib/sales";
+import { itemsCsv, salesCsv } from "../lib/sales";
 
 test("CSV reads what Excel and Google Sheets write", () => {
   const text = '﻿Name,Note\r\n"Coke, 1.5L","He said ""hi""\nthen left"\r\n\r\n,\r\nBread,plain\n';
@@ -124,6 +124,39 @@ test("sales export: one row per sale with its products, in the business's timezo
         "Receipt no.,Date,Time,Products,Items,Subtotal (PHP),Discount (PHP),Tax (PHP),Total (PHP),Cost (PHP),Profit (PHP),Payment,Status",
         "R-000012,2026-09-30,00:30,1 x Ensaymada; 2 x Iced Coffee,3,250,10,28.8,268.8,110.55,129.45,GCash,Completed",
         'R-000013,2026-09-30,10:05,"1 x Coke, 1.5L",1,50,0,0,50,20,30,Cash,Voided',
+      ].join("\r\n") +
+      "\r\n",
+  );
+});
+
+test("products-sold export: one row per product, with SKU, category and profit before discount", () => {
+  const csv = itemsCsv(
+    [
+      {
+        receipt_number: "R-000012",
+        created_at: "2026-09-29T16:30:00Z",
+        subtotal: 235.5,
+        discount: 10,
+        tax: 0,
+        total: 225.5,
+        payment_method: "card",
+        status: "completed",
+        sale_items: [
+          { product_name: "Ensaymada", quantity: 1, unit_price: 45.5, unit_cost: 20.55, subtotal: 45.5, products: { sku: null, categories: { name: "Bakery" } } },
+          { product_name: "Iced Coffee", quantity: 2, unit_price: 95, unit_cost: 45, subtotal: 190, products: { sku: "DRK-001", categories: null } },
+        ],
+      },
+    ],
+    "Asia/Manila",
+    "PHP",
+  );
+  assert.equal(
+    csv,
+    "\uFEFF" +
+      [
+        "Receipt no.,Date,Time,Product,SKU,Category,Quantity,Unit price (PHP),Line total (PHP),Cost (PHP),Profit before discount (PHP),Payment,Status",
+        "R-000012,2026-09-30,00:30,Ensaymada,,Bakery,1,45.5,45.5,20.55,24.95,Card,Completed",
+        "R-000012,2026-09-30,00:30,Iced Coffee,DRK-001,,2,95,190,90,100,Card,Completed",
       ].join("\r\n") +
       "\r\n",
   );
