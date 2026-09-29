@@ -60,6 +60,19 @@ Setup:
 
 To try the lock, set a test account's `trial_ends_at` to a past date in the Supabase table editor.
 
+## Public site and welcome email
+
+- **Home page** (`/`, signed-out visitors), **Terms** (`/terms`), **Privacy Policy** (`/privacy`) and
+  **Return & Refund Policy** (`/refunds`) live in `app/(site)/`. PayMongo reviews these before
+  going live, so they show pricing in pesos, the operator's registered address and contact details.
+  The operator's details are in `lib/business.ts`.
+- **User guide:** `public/user-guide.html` is the owner-made guide, served as-is at `/user-guide.html`.
+  Replace the file to update it.
+- **Welcome email:** a business's first sign-in (when its profile is created) sends one welcome email
+  through Brevo, after the page has loaded, with the how-to video, the user guide and the trial end
+  date. Set `BREVO_API_KEY` and `EMAIL_FROM` (a sender verified in Brevo, see `.env.example`); without
+  them the email is skipped and signing up works as usual.
+
 ## How the data stays correct
 
 - Every table has Row Level Security; each user only sees and changes their own rows.

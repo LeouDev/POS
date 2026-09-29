@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CircleAlert, Gift, KeyRound, MailCheck } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
@@ -216,6 +217,10 @@ function SignUpForm({ onSent }: { onSent: (email: string) => void }) {
           {isSubmitting ? "Creating…" : `Start ${TRIAL_DAYS}-day free trial`}
         </button>
       </div>
+      <p className="text-[12px]">
+        By creating an account, you agree to the <Link href="/terms">Terms &amp; Conditions</Link> and{" "}
+        <Link href="/privacy">Privacy Policy</Link>.
+      </p>
     </form>
   );
 }

@@ -1,8 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// /api/paymongo checks PayMongo's signature instead of a session.
-const PUBLIC_PATHS = ["/login", "/auth", "/api/paymongo"];
+// The public site (home and policy pages) is open to everyone; /api/paymongo checks PayMongo's signature instead.
+const PUBLIC_PATHS = ["/login", "/auth", "/api/paymongo", "/terms", "/privacy", "/refunds"];
 
 // Refreshes the Supabase session cookie on every request and keeps signed-out
 // visitors on the login page. Data access is still enforced by RLS.
@@ -32,7 +32,7 @@ export async function proxy(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const signedIn = Boolean(data?.claims);
   const { pathname, search } = request.nextUrl;
-  const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+  const isPublic = pathname === "/" || PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
   // Server actions check the session themselves and answer with a redirect the client understands.
   if (request.headers.has("next-action")) return response;
@@ -40,8 +40,8 @@ export async function proxy(request: NextRequest) {
   let redirectTo: URL | null = null;
   if (!signedIn && !isPublic) {
     redirectTo = new URL("/login", request.url);
-    if (pathname !== "/") redirectTo.searchParams.set("next", pathname + search);
-  } else if (signedIn && pathname === "/login") {
+    redirectTo.searchParams.set("next", pathname + search);
+  } else if (signedIn && (pathname === "/login" || pathname === "/")) {
     redirectTo = new URL("/dashboard", request.url);
   }
   if (!redirectTo) return response;
@@ -52,5 +52,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.png|apple-icon.png|kassix-logo.webp).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.png|apple-icon.png|kassix-logo.webp|user-guide.html).*)"],
 };

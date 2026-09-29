@@ -119,7 +119,7 @@ export default async function BillingPage(props: PageProps<"/billing">) {
               <PayButtons />
               <p className="text-[12px]">
                 Pay securely through PayMongo with {METHOD_LIST}. Nothing renews automatically: each payment adds its
-                days after your current end date.
+                days after your current end date. See our <Link href="/refunds">Return &amp; Refund Policy</Link>.
               </p>
             </>
           )}

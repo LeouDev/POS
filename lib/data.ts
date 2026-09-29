@@ -1,9 +1,13 @@
 import { cache } from "react";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { describeError, MISSING_TABLES } from "@/lib/actions";
+import { sendWelcomeEmail } from "@/lib/email";
 import { isValidTimezone } from "@/lib/format";
 import type { Category, Profile, ProductWithCategory, ReportPeriod, SalesReport } from "@/lib/database.types";
+import { trialEndsAt } from "@/lib/trial";
 
 /** The signed-in user and a Supabase client acting as them. Redirects to /login otherwise. */
 export const getSession = cache(async () => {
@@ -23,7 +27,7 @@ const text = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
 /** The business profile, created on first visit from the details given at sign-up. */
 export const getProfile = cache(async (): Promise<Profile> => {
-  const { supabase, userId, metadata } = await getSession();
+  const { supabase, userId, email, metadata } = await getSession();
   const load = () => supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
 
   const { data, error } = await load();
@@ -41,8 +45,24 @@ export const getProfile = cache(async (): Promise<Profile> => {
 
   const { data: created, error: reloadError } = await load();
   if (reloadError || !created) throw new Error(reloadError ? describeError(reloadError) : MISSING_TABLES);
+  // This request created the business (first sign-in), so it alone sends the welcome email.
+  if (!insertError) await welcomeAfterResponse(email, created);
   return created;
 });
+
+async function welcomeAfterResponse(to: string, profile: Profile) {
+  const h = await headers(); // not readable inside after() in a Server Component
+  const origin = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
+  after(() =>
+    sendWelcomeEmail(to, {
+      businessName: profile.business_name,
+      ownerName: profile.owner_name,
+      trialEndsAt: trialEndsAt(profile),
+      timezone: profile.timezone,
+      origin,
+    }),
+  );
+}
 
 // ponytail: loads the whole catalogue in one request (PostgREST caps responses at 1,000 rows);
 // move filtering into the query and paginate if a shop ever carries more products than that.
