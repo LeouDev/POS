@@ -6,8 +6,8 @@ const DAY = 86_400_000;
 
 /** KASSIX Pro, paid per period through PayMongo. `days` must match record_payment() in the kassix_pro migration. */
 export const PLANS = {
-  monthly: { label: "Monthly", name: "KASSIX Pro (1 month)", amount: 399, days: 30, per: "month" },
-  yearly: { label: "Yearly", name: "KASSIX Pro (1 year)", amount: 3990, days: 365, per: "year" },
+  monthly: { label: "Monthly", name: "KASSIX Pro (1 month)", amount: 149, days: 30, per: "month" },
+  yearly: { label: "Yearly", name: "KASSIX Pro (1 year)", amount: 1490, days: 365, per: "year" },
 } as const;
 export type Plan = keyof typeof PLANS;
 export const isPlan = (v: unknown): v is Plan => typeof v === "string" && Object.hasOwn(PLANS, v);

@@ -67,7 +67,15 @@ const FEATURES: { icon: LucideIcon; color: string; title: string; text: string }
 const FAQ: { q: string; a: string }[] = [
   {
     q: "Do I need special equipment?",
-    a: "No. Any computer, tablet or phone with internet works. You only need a printer if you want paper receipts.",
+    a: "No. Any computer, tablet or phone with internet works.",
+  },
+  {
+    q: "What about receipts and a cash drawer?",
+    a: "Both are optional. Print a receipt for any sale on a printer your device can already print to, such as a 58mm or 80mm thermal receipt printer, or just show it on screen. KASSIX doesn't open a cash drawer by itself, so any manual drawer works.",
+  },
+  {
+    q: "Can customers pay with GCash or card?",
+    a: "Yes. Take the payment with your own GCash QR code or card terminal as usual, then choose GCash or Card in KASSIX, so your sales list and reports show how every sale was paid. KASSIX doesn't handle your customers' money itself.",
   },
   {
     q: "What happens after the free trial?",

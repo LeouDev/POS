@@ -32,7 +32,7 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   throw new Error(`Unexpected request to ${url}`);
 }) as typeof fetch;
 
-const session = (metadata: object | null, amount = 39900, source = "gcash", status = "paid") => ({
+const session = (metadata: object | null, amount = 14900, source = "gcash", status = "paid") => ({
   id: "cs_test123",
   type: "checkout_session",
   attributes: {
@@ -72,11 +72,11 @@ test("webhook: only signed, paid KASSIX Pro checkouts add time", async () => {
   assert.equal(recorded.length, 0);
 
   assert.deepEqual((await deliver("checkout_session.payment.paid", session(monthly))).json, { received: true, recorded: true });
-  const yearly = await deliver("checkout_session.payment.paid", session({ ...monthly, plan: "yearly" }, 399000, "card"), { slot: "li" });
+  const yearly = await deliver("checkout_session.payment.paid", session({ ...monthly, plan: "yearly" }, 149000, "card"), { slot: "li" });
   assert.equal(yearly.status, 200);
   assert.deepEqual(recorded, [
-    { p_user_id: OWNER, p_plan: "monthly", p_amount: 399, p_checkout_session_id: "cs_test123", p_payment_id: "pay_abc", p_method: "gcash" },
-    { p_user_id: OWNER, p_plan: "yearly", p_amount: 3990, p_checkout_session_id: "cs_test123", p_payment_id: "pay_abc", p_method: "card" },
+    { p_user_id: OWNER, p_plan: "monthly", p_amount: 149, p_checkout_session_id: "cs_test123", p_payment_id: "pay_abc", p_method: "gcash" },
+    { p_user_id: OWNER, p_plan: "yearly", p_amount: 1490, p_checkout_session_id: "cs_test123", p_payment_id: "pay_abc", p_method: "card" },
   ]);
 
   // A database failure answers 500 so PayMongo retries.
@@ -92,14 +92,14 @@ test("return check: records the owner's own paid checkout, nothing else", async 
   assert.equal(await confirmCheckout("../v1/payments", OWNER), false); // not a session id: PayMongo isn't called
   paymongoSession = session({ user_id: "someone-else", plan: "monthly" });
   assert.equal(await confirmCheckout("cs_test123", OWNER), false);
-  paymongoSession = session(monthly, 39900, "qrph", "pending");
+  paymongoSession = session(monthly, 14900, "qrph", "pending");
   assert.equal(await confirmCheckout("cs_test123", OWNER), false);
   assert.equal(recorded.length, 0);
 
-  paymongoSession = session(monthly, 39900, "qrph");
+  paymongoSession = session(monthly, 14900, "qrph");
   assert.equal(await confirmCheckout("cs_test123", OWNER), true);
   assert.deepEqual(recorded, [
-    { p_user_id: OWNER, p_plan: "monthly", p_amount: 399, p_checkout_session_id: "cs_test123", p_payment_id: "pay_abc", p_method: "qrph" },
+    { p_user_id: OWNER, p_plan: "monthly", p_amount: 149, p_checkout_session_id: "cs_test123", p_payment_id: "pay_abc", p_method: "qrph" },
   ]);
 
   paymongoSession = null; // PayMongo unreachable or unknown session: the page logs it and waits for the webhook

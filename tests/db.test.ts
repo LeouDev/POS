@@ -335,26 +335,26 @@ test("a lapsed account is locked until KASSIX Pro is paid", async () => {
 
   // Owners can't grant themselves time; only the webhook's service role can record payments.
   await assert.rejects(
-    as(D, (q) => q(`select record_payment($1, 'monthly', 399, 'cs_fake')`, [D])),
+    as(D, (q) => q(`select record_payment($1, 'monthly', 149, 'cs_fake')`, [D])),
     /permission denied/,
   );
 
   // A monthly payment unlocks 30 days from now, once per checkout session.
-  const paid = await one(asService((q) => q(`select * from record_payment($1, 'monthly', 399, 'cs_test_1', 'pay_1', 'gcash')`, [D])));
-  const again = await one(asService((q) => q(`select * from record_payment($1, 'monthly', 399, 'cs_test_1', 'pay_1', 'gcash')`, [D])));
+  const paid = await one(asService((q) => q(`select * from record_payment($1, 'monthly', 149, 'cs_test_1', 'pay_1', 'gcash')`, [D])));
+  const again = await one(asService((q) => q(`select * from record_payment($1, 'monthly', 149, 'cs_test_1', 'pay_1', 'gcash')`, [D])));
   assert.deepEqual(again.paid_until, paid.paid_until);
   const days = await one(as(D, (q) => q(`select round(extract(epoch from paid_until - now()) / 86400) as d from profiles`)));
   assert.equal(Number(days.d), 30);
   assert.equal((await one(as(D, (q) => q(`select has_access() as ok`)))).ok, true);
   assert.equal((await as(D, (q) => q(`select * from products`))).length, 1);
   const history = await as(D, (q) => q(`select plan, amount::float, method from payments`));
-  assert.deepEqual(history, [{ plan: "monthly", amount: 399, method: "gcash" }]);
+  assert.deepEqual(history, [{ plan: "monthly", amount: 149, method: "gcash" }]);
   assert.equal((await as(A, (q) => q(`select * from payments`))).length, 0); // private to D
 });
 
 test("paying during the trial adds the time after the trial", async () => {
   const before = await one(as(A, (q) => q(`select trial_ends_at from profiles`)));
-  const after = await one(asService((q) => q(`select * from record_payment($1, 'yearly', 3990, 'cs_test_2')`, [A])));
+  const after = await one(asService((q) => q(`select * from record_payment($1, 'yearly', 1490, 'cs_test_2')`, [A])));
   const gap = (Date.parse(String(after.paid_until)) - Date.parse(String(before.trial_ends_at))) / 86_400_000;
   assert.equal(Math.round(gap), 365);
 });

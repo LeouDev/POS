@@ -34,7 +34,7 @@ holds the end date; owners can't change it, but you can extend a trial in the Su
 
 ## KASSIX Pro (PayMongo)
 
-After the trial, KASSIX Pro costs ₱399 for 30 days or ₱3,990 for 365 days, paid through a PayMongo
+After the trial, KASSIX Pro costs ₱149 for 30 days or ₱1,490 for 365 days, paid through a PayMongo
 hosted checkout (GCash, Maya, QR Ph, GrabPay, cards). Nothing renews automatically: each payment adds
 its days after the account's current end date (`profiles.paid_until`), so paying early loses nothing.
 
