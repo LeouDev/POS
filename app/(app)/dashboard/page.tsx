@@ -7,6 +7,7 @@ import { Lcd, StockBadge, Window } from "@/components/ui";
 import { describeError } from "@/lib/actions";
 import { getProfile, getReport, getSession } from "@/lib/data";
 import { chartPoints, describePeriod, formatDateTime, formatMoney, paymentLabel } from "@/lib/format";
+import { TRIAL_DAYS, trialEndsAt } from "@/lib/trial";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -56,7 +57,12 @@ export default async function DashboardPage() {
       }
     >
       <div className="flex flex-col gap-3">
-        {!hasSales && <GettingStarted hasProducts={hasProducts} />}
+        {!hasSales && (
+          <GettingStarted
+            hasProducts={hasProducts}
+            trialEnds={formatDateTime(trialEndsAt(profile), profile.timezone, "date")}
+          />
+        )}
 
         <section aria-label="Today" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           <Lcd label="Today's sales" value={money(today.revenue)} />
@@ -190,10 +196,14 @@ const Empty = ({ children }: { children: ReactNode }) => (
   <p className="flex min-h-24 items-center justify-center p-4 text-center text-[13px] text-neutral-600">{children}</p>
 );
 
-function GettingStarted({ hasProducts }: { hasProducts: boolean }) {
+function GettingStarted({ hasProducts, trialEnds }: { hasProducts: boolean; trialEnds: string }) {
   return (
     <fieldset className="groupbox !bg-tip">
       <legend>Getting started</legend>
+      <p className="mb-2 text-[13px]">
+        Welcome to KASSIX! Your <b>{TRIAL_DAYS}-day free trial</b> runs until <b>{trialEnds}</b>. Every feature is
+        included.
+      </p>
       <ol className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
         <li className="flex items-center gap-2">
           <span className={`grid size-6 flex-none place-items-center border border-black text-[12px] font-bold ${hasProducts ? "bg-ok text-white" : "bg-white"}`}>

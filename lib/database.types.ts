@@ -16,6 +16,7 @@ type ProfileRow = {
   tax_rate: number;
   timezone: string;
   last_receipt_number: number;
+  trial_ends_at: string;
   created_at: string;
 };
 
@@ -82,7 +83,7 @@ export type Database = {
     Tables: {
       profiles: {
         Row: ProfileRow;
-        Insert: Partial<Omit<ProfileRow, "last_receipt_number">>;
+        Insert: Partial<Pick<ProfileRow, "user_id" | "business_name" | "owner_name" | "currency" | "tax_rate" | "timezone">>;
         Update: Partial<Pick<ProfileRow, "business_name" | "owner_name" | "currency" | "tax_rate" | "timezone">>;
         Relationships: [];
       };

@@ -1,20 +1,29 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CircleAlert, KeyRound, MailCheck } from "lucide-react";
+import { CircleAlert, Gift, KeyRound, MailCheck } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { Field, fieldIds, TitleBar } from "@/components/ui";
 import { signInSchema, signUpSchema } from "@/lib/schemas";
+import { TRIAL_DAYS } from "@/lib/trial";
 import { signIn, signUp } from "./actions";
 import { safeCall } from "@/lib/actions";
 
 type Mode = "signin" | "signup";
 
-export function LoginWindow({ next, linkError }: { next: string; linkError?: string }) {
-  const [mode, setMode] = useState<Mode>("signin");
+export function LoginWindow({
+  next,
+  linkError,
+  startOnSignUp,
+}: {
+  next: string;
+  linkError?: string;
+  startOnSignUp?: boolean;
+}) {
+  const [mode, setMode] = useState<Mode>(startOnSignUp ? "signup" : "signin");
   const [sentTo, setSentTo] = useState<string | null>(null);
 
   return (
@@ -37,8 +46,8 @@ export function LoginWindow({ next, linkError }: { next: string; linkError?: str
             <div className="flex gap-3">
               <MailCheck aria-hidden size={32} className="flex-none text-navy" />
               <p>
-                We sent a confirmation link to <b>{sentTo}</b>. Open it on this device to finish creating your
-                account.
+                We sent a confirmation link to <b>{sentTo}</b>. Open it on this device to finish creating your account.
+                Your {TRIAL_DAYS}-day free trial starts when you first sign in.
               </p>
             </div>
             <button
@@ -63,7 +72,11 @@ export function LoginWindow({ next, linkError }: { next: string; linkError?: str
               </button>
             </div>
             <div className="tabpanel">
-              {mode === "signin" ? <SignInForm next={next} linkError={linkError} /> : <SignUpForm onSent={setSentTo} />}
+              {mode === "signin" ? (
+                <SignInForm next={next} linkError={linkError} onNewAccount={() => setMode("signup")} />
+              ) : (
+                <SignUpForm onSent={setSentTo} />
+              )}
             </div>
           </div>
         )}
@@ -82,7 +95,7 @@ function FormError({ message }: { message: string | null | undefined }) {
   );
 }
 
-function SignInForm({ next, linkError }: { next: string; linkError?: string }) {
+function SignInForm({ next, linkError, onNewAccount }: { next: string; linkError?: string; onNewAccount: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const { register, handleSubmit, formState } = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
@@ -122,6 +135,12 @@ function SignInForm({ next, linkError }: { next: string; linkError?: string }) {
           {isSubmitting ? "Signing in…" : "Sign in"}
         </button>
       </div>
+      <p className="border-t border-shade pt-3 text-[13px]">
+        New to KASSIX?{" "}
+        <button type="button" className="font-bold text-navy underline" onClick={onNewAccount}>
+          Start your {TRIAL_DAYS}-day free trial
+        </button>
+      </p>
     </form>
   );
 }
@@ -150,6 +169,13 @@ function SignUpForm({ onSent }: { onSent: (email: string) => void }) {
 
   return (
     <form onSubmit={onSubmit} noValidate className="flex flex-col gap-3">
+      <div className="flex items-start gap-2.5 border border-black bg-tip p-2.5 text-[13px]">
+        <Gift aria-hidden size={22} className="flex-none text-brand" />
+        <p>
+          <b>{TRIAL_DAYS} days free.</b> Use every feature of KASSIX free for {TRIAL_DAYS} days to see if it fits your
+          store. No credit card needed.
+        </p>
+      </div>
       <FormError message={error} />
       <Field id="signup-business" label="Business name" error={errors.businessName?.message}>
         <input
@@ -187,7 +213,7 @@ function SignUpForm({ onSent }: { onSent: (email: string) => void }) {
       </Field>
       <div className="flex justify-end pt-1">
         <button type="submit" className="btn btn-default btn-lg min-w-32" disabled={isSubmitting}>
-          {isSubmitting ? "Creating…" : "Create account"}
+          {isSubmitting ? "Creating…" : `Start ${TRIAL_DAYS}-day free trial`}
         </button>
       </div>
     </form>

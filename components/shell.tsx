@@ -15,6 +15,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { signOut } from "@/app/login/actions";
+import { TrialTray } from "@/components/trial";
 import { cx, Logo } from "@/components/ui";
 
 const NAV: { href: string; label: string; icon: LucideIcon; color: string }[] = [
@@ -33,11 +34,13 @@ export function Shell({
   businessName,
   email,
   timezone,
+  trialEndsAt,
   children,
 }: {
   businessName: string;
   email: string;
   timezone: string;
+  trialEndsAt: string;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -84,7 +87,7 @@ export function Shell({
           {children}
         </main>
       </div>
-      <Taskbar current={current} businessName={businessName} timezone={timezone} />
+      <Taskbar current={current} businessName={businessName} timezone={timezone} trialEndsAt={trialEndsAt} />
     </div>
   );
 }
@@ -108,10 +111,12 @@ function Taskbar({
   current,
   businessName,
   timezone,
+  trialEndsAt,
 }: {
   current?: (typeof NAV)[number];
   businessName: string;
   timezone: string;
+  trialEndsAt: string;
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -166,6 +171,7 @@ function Taskbar({
           <ShoppingCart aria-hidden size={16} className="text-ok" /> Sell
         </Link>
       )}
+      <TrialTray endsAt={trialEndsAt} />
       <Clock timezone={timezone} />
 
       {open && (
@@ -221,7 +227,7 @@ function Clock({ timezone }: { timezone: string }) {
     () => "",
   );
   return (
-    <div className="flex h-8 min-w-20 items-center justify-center border [border-color:#808080_#fff_#fff_#808080] px-2 text-[12px] tabular-nums lg:h-7">
+    <div className="hidden h-8 min-w-20 items-center justify-center border [border-color:#808080_#fff_#fff_#808080] px-2 text-[12px] tabular-nums sm:flex lg:h-7">
       {time}
     </div>
   );

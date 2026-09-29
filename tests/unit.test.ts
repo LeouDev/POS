@@ -5,6 +5,7 @@ import { cartTotals, quickCashAmounts } from "../lib/cart";
 import { addDays, zonedDayStart } from "../lib/dates";
 import type { SalesReport } from "../lib/database.types";
 import { chartPoints, describePeriod } from "../lib/format";
+import { trialDaysLeft, trialEndsAt } from "../lib/trial";
 
 test("cart totals match complete_sale's rounding", () => {
   // Same numbers as the database test: 3 x 50 + 25.50, less 10, 12% tax.
@@ -56,4 +57,16 @@ test("report labels read the local bucket times as-is", () => {
   assert.deepEqual(chartPoints(week).map((p) => [p.label, p.title]), [["Mon 28", "Mon, Sep 28"]]);
   assert.equal(describePeriod(week), "Mon, Sep 28 – Sun, Oct 4");
   assert.equal(describePeriod({ ...week, period: "month", from: "2026-09-01T00:00:00", to: "2026-10-01T00:00:00" }), "September 2026");
+});
+
+test("free trial: 60 days from sign-up, counted in whole days", () => {
+  const created = "2026-09-29T02:00:00.000Z";
+  // Before the free_trial migration the column is missing and the end is derived from created_at.
+  const end = trialEndsAt({ created_at: created, trial_ends_at: undefined as unknown as string });
+  assert.equal(end, "2026-11-28T02:00:00.000Z");
+  assert.equal(trialEndsAt({ created_at: created, trial_ends_at: "2027-01-01T00:00:00.000Z" }), "2027-01-01T00:00:00.000Z");
+  assert.equal(trialDaysLeft(end, Date.parse(created)), 60);
+  assert.equal(trialDaysLeft(end, Date.parse("2026-11-27T03:00:00.000Z")), 1); // final (partial) day
+  assert.equal(trialDaysLeft(end, Date.parse("2026-11-28T02:00:00.000Z")), 0);
+  assert.equal(trialDaysLeft(end, Date.parse("2026-12-25T00:00:00.000Z")), 0);
 });

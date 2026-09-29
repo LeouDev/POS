@@ -106,6 +106,26 @@ test("a product can't point at another user's category", async () => {
   );
 });
 
+test("every account gets a 60-day trial that owners can't change", async () => {
+  const days = await one(as(A, (q) => q(`select extract(day from trial_ends_at - created_at)::int as d from profiles`)));
+  assert.equal(days.d, 60);
+  await assert.rejects(as(A, (q) => q(`update profiles set trial_ends_at = now() + interval '10 years'`)), /permission denied/);
+
+  const C = "00000000-0000-4000-8000-00000000000c";
+  await db.query(`insert into auth.users (id, email) values ($1, 'c@test.local')`, [C]);
+  await assert.rejects(
+    as(C, (q) => q(`insert into profiles (user_id, trial_ends_at) values ($1, now() + interval '10 years')`, [C])),
+    /permission denied/,
+  );
+  await assert.rejects(
+    as(C, (q) => q(`insert into profiles (user_id, created_at) values ($1, now() + interval '10 years')`, [C])),
+    /permission denied/,
+  );
+  await as(C, (q) => q(`insert into profiles (user_id, business_name, timezone) values ($1, 'C Store', 'UTC')`, [C]));
+  const c = await one(as(C, (q) => q(`select extract(day from trial_ends_at - now())::int as d from profiles`)));
+  assert.equal(c.d, 59); // 59 days 23:59:59… a moment after creation
+});
+
 test("stock and receipt counters can't be edited directly", async () => {
   await assert.rejects(as(A, (q) => q(`update products set stock_quantity = 999 where id = $1`, [coffee])), /permission denied/);
   await assert.rejects(as(A, (q) => q(`update profiles set last_receipt_number = 0`)), /permission denied/);

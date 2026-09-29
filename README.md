@@ -9,9 +9,9 @@ with receipts, and sales/profit reports. Windows 98 look, built with Next.js 16,
 1. `npm install`
 2. Copy `.env.example` to `.env.local` and fill in your Supabase project URL and publishable
    (anon) key from **Project Settings → API Keys**.
-3. Create the database objects: paste `supabase/migrations/20260929000000_init.sql` into the
-   Supabase **SQL editor** and run it, or run
-   `npx supabase link --project-ref <ref>` then `npx supabase db push`.
+3. Create the database objects: run each file in `supabase/migrations/` in order
+   (`20260929000000_init.sql`, then `20260929120000_free_trial.sql`) in the Supabase **SQL editor**,
+   or run `npx supabase link --project-ref <ref>` then `npx supabase db push`.
 4. In **Authentication → URL Configuration**, set the Site URL to where the app runs and add
    `http://localhost:3000/**` (plus your deployed domain) to Redirect URLs. While testing you can
    instead switch off **Confirm email** under Sign In / Providers → Email.
@@ -25,6 +25,13 @@ with receipts, and sales/profit reports. Windows 98 look, built with Next.js 16,
 | `npm run build` | Production build (type-checks)                                                               |
 | `npm run lint`  | ESLint                                                                                       |
 | `npm test`      | Runs the migration in an in-process Postgres (PGlite) and tests RLS, sales and stock logic, plus unit tests |
+
+## Free trial
+
+Every new business gets 60 days free, starting when its profile is created (first sign-in).
+The sign-up form says so, and the taskbar and Settings show the days left. `profiles.trial_ends_at`
+holds the end date; owners can't change it, but you can extend a trial in the Supabase dashboard.
+Nothing is locked when a trial ends yet.
 
 ## How the data stays correct
 

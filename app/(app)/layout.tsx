@@ -6,6 +6,7 @@ import { Shell } from "@/components/shell";
 import { TitleBar } from "@/components/ui";
 import { MISSING_TABLES } from "@/lib/actions";
 import { getProfile, getSession } from "@/lib/data";
+import { trialEndsAt } from "@/lib/trial";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   // Production hides server error messages, so the likeliest setup mistake (migration not run)
@@ -19,7 +20,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   const [{ email }, profile] = loaded;
 
   return (
-    <Shell businessName={profile.business_name} email={email} timezone={profile.timezone}>
+    <Shell
+      businessName={profile.business_name}
+      email={email}
+      timezone={profile.timezone}
+      trialEndsAt={trialEndsAt(profile)}
+    >
       {children}
     </Shell>
   );
