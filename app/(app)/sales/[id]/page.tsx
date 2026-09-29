@@ -17,13 +17,16 @@ export default async function ReceiptPage(props: PageProps<"/sales/[id]">) {
   const { id } = await props.params;
   if (!z.uuid().safeParse(id).success) notFound();
 
-  const [{ supabase }, profile] = await Promise.all([getSession(), getProfile()]);
-  const { data: sale, error } = await supabase
-    .from("sales")
-    .select("*, sale_items(*)")
-    .eq("id", id)
-    .order("product_name", { referencedTable: "sale_items" })
-    .maybeSingle();
+  const { supabase } = await getSession();
+  const [profile, { data: sale, error }] = await Promise.all([
+    getProfile(),
+    supabase
+      .from("sales")
+      .select("*, sale_items(*)")
+      .eq("id", id)
+      .order("product_name", { referencedTable: "sale_items" })
+      .maybeSingle(),
+  ]);
   if (error) throw new Error(describeError(error));
   if (!sale) notFound();
 
@@ -58,7 +61,12 @@ export default async function ReceiptPage(props: PageProps<"/sales/[id]">) {
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="sunken flex justify-center !bg-[#7a7a7a] px-2 py-5">
           <Printable>
-            <Receipt sale={sale} businessName={profile.business_name} currency={profile.currency} timezone={profile.timezone} />
+            <Receipt
+              sale={sale}
+              businessName={profile.business_name}
+              currency={profile.currency}
+              timezone={profile.timezone}
+            />
           </Printable>
         </div>
         <div className="flex flex-col gap-3">

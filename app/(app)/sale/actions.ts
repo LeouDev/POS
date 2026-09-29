@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { describeError, fail, invalid, ok, type ActionResult } from "@/lib/actions";
 import { getSession } from "@/lib/data";
 import type { SaleWithItems } from "@/lib/database.types";
@@ -9,6 +8,8 @@ import { checkoutSchema } from "@/lib/schemas";
 /**
  * Records a sale through complete_sale (one transaction: sale, items, movements, stock).
  * Safe to retry with the same saleId: a sale that already went through is returned as-is.
+ * No revalidatePath here: the register refreshes itself in the background so the receipt
+ * isn't held up, and other pages are dynamic, so they always load fresh.
  */
 export async function checkout(input: unknown): Promise<ActionResult<SaleWithItems>> {
   const parsed = checkoutSchema.safeParse(input);
@@ -23,8 +24,6 @@ export async function checkout(input: unknown): Promise<ActionResult<SaleWithIte
     p_discount: discount,
     p_expected_total: expectedTotal,
   });
-  // Refresh even on failure: stale prices or stock are the usual reason a sale is refused.
-  revalidatePath("/", "layout");
   if (error) return fail(describeError(error));
 
   const { data: sale, error: loadError } = await supabase

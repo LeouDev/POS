@@ -15,8 +15,8 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
-import { unstable_rethrow } from "next/navigation";
-import { useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
+import { unstable_rethrow, useRouter } from "next/navigation";
+import { startTransition, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { ConfirmDialog, Dialog } from "@/components/dialog";
 import { Printable } from "@/components/printable";
 import { Receipt } from "@/components/receipt";
@@ -101,6 +101,7 @@ export function Register({
   nextReceipt: number;
 }) {
   const toast = useToast();
+  const router = useRouter();
   const money = (n: number) => formatMoney(n, currency);
 
   const [query, setQuery] = useState("");
@@ -213,6 +214,9 @@ export function Register({
         discount: discountValue,
         expectedTotal: totals.total,
       });
+      // Pull fresh stock and prices without holding up the receipt (or the error, when a stale
+      // price or stock level was the reason the sale was refused).
+      startTransition(() => router.refresh());
       if (!result.ok) {
         toast(result.error, "error");
         return;

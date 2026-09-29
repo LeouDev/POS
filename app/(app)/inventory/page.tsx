@@ -2,6 +2,7 @@ import { Boxes, History, PackageSearch, Search } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { FilterForm } from "@/components/filter-form";
 import { EmptyState, Pager, StockBadge, Window, withParams } from "@/components/ui";
 import { describeError } from "@/lib/actions";
@@ -182,16 +183,16 @@ async function MovementLog({ sp }: { sp: SearchParams }) {
   const productId = param(sp.product);
   const type = MOVEMENT_TYPES.find((t) => t === param(sp.type));
   const page = Math.max(1, Math.floor(Number(param(sp.page))) || 1);
-  const [{ supabase }, profile, products] = await Promise.all([getSession(), getProfile(), getProducts()]);
+  const { supabase } = await getSession();
 
   let query = supabase
     .from("inventory_movements")
     .select("id, type, quantity, notes, reference_id, created_at, products(name, sku)", { count: "exact" })
     .order("created_at", { ascending: false })
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
-  if (products.some((p) => p.id === productId)) query = query.eq("product_id", productId);
+  if (z.uuid().safeParse(productId).success) query = query.eq("product_id", productId);
   if (type) query = query.eq("type", type);
-  const { data: moves, count, error } = await query;
+  const [profile, products, { data: moves, count, error }] = await Promise.all([getProfile(), getProducts(), query]);
   const current = { tab: "log", product: productId, type: type ?? "" };
   if (error?.code === "PGRST103") redirect(withParams("/inventory", current, {})); // page past the end
   if (error) throw new Error(describeError(error));

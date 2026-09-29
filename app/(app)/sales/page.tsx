@@ -20,8 +20,11 @@ export default async function SalesPage(props: PageProps<"/sales">) {
   const to = param(sp.to);
   const method = PAYMENT_METHODS.find((m) => m.value === param(sp.method))?.value;
   const page = Math.max(1, Math.floor(Number(param(sp.page))) || 1);
-  const [{ supabase }, profile] = await Promise.all([getSession(), getProfile()]);
-  const tz = profile.timezone;
+  const { supabase } = await getSession();
+  const profileLoad = getProfile();
+  // The timezone is only needed up front for date filters; otherwise profile and sales load together.
+  const dated = isIsoDate(from) || isIsoDate(to);
+  const zone = dated ? (await profileLoad).timezone : "UTC";
 
   let query = supabase
     .from("sales")
@@ -30,9 +33,10 @@ export default async function SalesPage(props: PageProps<"/sales">) {
     .range((page - 1) * PAGE_SIZE, page * PAGE_SIZE - 1);
   if (q) query = query.ilike("receipt_number", `%${q}%`);
   if (method) query = query.eq("payment_method", method);
-  if (isIsoDate(from)) query = query.gte("created_at", zonedDayStart(from, tz).toISOString());
-  if (isIsoDate(to)) query = query.lt("created_at", zonedDayStart(addDays(to, 1), tz).toISOString());
-  const { data: sales, count, error } = await query;
+  if (isIsoDate(from)) query = query.gte("created_at", zonedDayStart(from, zone).toISOString());
+  if (isIsoDate(to)) query = query.lt("created_at", zonedDayStart(addDays(to, 1), zone).toISOString());
+  const [{ data: sales, count, error }, profile] = await Promise.all([query, profileLoad]);
+  const tz = profile.timezone;
   const current = { q, from, to, method: method ?? "" };
   if (error?.code === "PGRST103") redirect(withParams("/sales", current, {})); // page past the end
   if (error) throw new Error(describeError(error));
