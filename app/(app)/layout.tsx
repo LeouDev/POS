@@ -1,12 +1,12 @@
 import { Database, LogOut } from "lucide-react";
-import { unstable_rethrow } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import type { ReactNode } from "react";
 import { signOut } from "@/app/login/actions";
 import { Shell } from "@/components/shell";
 import { TitleBar } from "@/components/ui";
 import { MISSING_TABLES } from "@/lib/actions";
 import { getProfile, getSession } from "@/lib/data";
-import { trialEndsAt } from "@/lib/trial";
+import { accessEndsAt, hasAccess, isPro } from "@/lib/trial";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   // Production hides server error messages, so the likeliest setup mistake (migration not run)
@@ -18,13 +18,16 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   });
   if (!loaded) return <SetupNeeded />;
   const [{ email }, profile] = loaded;
+  // Trial or paid time is over: only the KASSIX Pro page is open (RLS enforces the same in the database).
+  if (!hasAccess(profile)) redirect("/billing");
 
   return (
     <Shell
       businessName={profile.business_name}
       email={email}
       timezone={profile.timezone}
-      trialEndsAt={trialEndsAt(profile)}
+      accessEndsAt={accessEndsAt(profile)}
+      pro={isPro(profile)}
     >
       {children}
     </Shell>
@@ -41,8 +44,8 @@ function SetupNeeded() {
           <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-[13px]">
             <li>Open your Supabase project&apos;s SQL editor.</li>
             <li>
-              Paste the contents of <code className="font-mono">supabase/migrations/20260929000000_init.sql</code> and
-              run it (or run <code className="font-mono">npx supabase db push</code>).
+              Run each file in <code className="font-mono">supabase/migrations/</code>, in order (or run{" "}
+              <code className="font-mono">npx supabase db push</code>).
             </li>
             <li>Reload this page.</li>
           </ol>

@@ -20,9 +20,10 @@ const SUPABASE_STUB = `
   $$;
   create role anon nologin;
   create role authenticated nologin;
-  grant usage on schema public, auth to anon, authenticated;
-  alter default privileges in schema public grant all on tables to anon, authenticated;
-  alter default privileges in schema public grant all on functions to anon, authenticated;
+  create role service_role nologin bypassrls;
+  grant usage on schema public, auth to anon, authenticated, service_role;
+  alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+  alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 `;
 
 let db: PGlite;
@@ -34,6 +35,14 @@ function as<T>(user: string | null, fn: (q: Query) => Promise<T>): Promise<T> {
   return db.transaction(async (tx: Transaction) => {
     await tx.exec(`set local role ${user ? "authenticated" : "anon"}`);
     if (user) await tx.query(`select set_config('request.jwt.claim.sub', $1, true)`, [user]);
+    return fn(async (sql, params) => (await tx.query<Row>(sql, params)).rows);
+  });
+}
+
+/** Runs fn as the server-side service role (what the PayMongo webhook uses). */
+function asService<T>(fn: (q: Query) => Promise<T>): Promise<T> {
+  return db.transaction(async (tx: Transaction) => {
+    await tx.exec(`set local role service_role`);
     return fn(async (sql, params) => (await tx.query<Row>(sql, params)).rows);
   });
 }
@@ -301,4 +310,48 @@ test("sales_report sums the period in the business timezone", async () => {
   const other = (await one(as(B, (q) => q(`select sales_report('today') as r`)))).r as { transactions: number; revenue: number };
   assert.deepEqual([other.transactions, other.revenue], [0, 0]);
   await assert.rejects(as(A, (q) => q(`select sales_report('decade')`)), /Unknown report period/);
+});
+
+test("a lapsed account is locked until KASSIX Pro is paid", async () => {
+  const D = "00000000-0000-4000-8000-00000000000d";
+  await db.query(`insert into auth.users (id, email) values ($1, 'd@test.local')`, [D]);
+  await as(D, (q) => q(`insert into profiles (user_id, business_name) values ($1, 'D Store')`, [D]));
+  const soap = await one(as(D, (q) => q(`insert into products (name, price, stock_quantity) values ('Soap', 20, 5) returning id`)));
+  assert.equal((await one(as(D, (q) => q(`select has_access() as ok`)))).ok, true);
+
+  // Trial runs out.
+  await db.query(`update profiles set trial_ends_at = now() - interval '1 day' where user_id = $1`, [D]);
+  assert.equal((await one(as(D, (q) => q(`select has_access() as ok`)))).ok, false);
+  assert.equal((await as(D, (q) => q(`select * from products`))).length, 0);
+  await assert.rejects(as(D, (q) => q(`insert into categories (name) values ('X')`)), /row-level security/);
+  await assert.rejects(
+    as(D, (q) => q(`select * from complete_sale($1, $2::jsonb, 'cash', 0)`, [crypto.randomUUID(), JSON.stringify([{ product_id: soap.id, quantity: 1 }])])),
+    /trial has ended/,
+  );
+  await assert.rejects(as(D, (q) => q(`select adjust_stock($1, 'RESTOCK', 1)`, [soap.id])), /trial has ended/);
+
+  // Owners can't grant themselves time; only the webhook's service role can record payments.
+  await assert.rejects(
+    as(D, (q) => q(`select record_payment($1, 'monthly', 399, 'cs_fake')`, [D])),
+    /permission denied/,
+  );
+
+  // A monthly payment unlocks 30 days from now, once per checkout session.
+  const paid = await one(asService((q) => q(`select * from record_payment($1, 'monthly', 399, 'cs_test_1', 'pay_1', 'gcash')`, [D])));
+  const again = await one(asService((q) => q(`select * from record_payment($1, 'monthly', 399, 'cs_test_1', 'pay_1', 'gcash')`, [D])));
+  assert.deepEqual(again.paid_until, paid.paid_until);
+  const days = await one(as(D, (q) => q(`select round(extract(epoch from paid_until - now()) / 86400) as d from profiles`)));
+  assert.equal(Number(days.d), 30);
+  assert.equal((await one(as(D, (q) => q(`select has_access() as ok`)))).ok, true);
+  assert.equal((await as(D, (q) => q(`select * from products`))).length, 1);
+  const history = await as(D, (q) => q(`select plan, amount::float, method from payments`));
+  assert.deepEqual(history, [{ plan: "monthly", amount: 399, method: "gcash" }]);
+  assert.equal((await as(A, (q) => q(`select * from payments`))).length, 0); // private to D
+});
+
+test("paying during the trial adds the time after the trial", async () => {
+  const before = await one(as(A, (q) => q(`select trial_ends_at from profiles`)));
+  const after = await one(asService((q) => q(`select * from record_payment($1, 'yearly', 3990, 'cs_test_2')`, [A])));
+  const gap = (Date.parse(String(after.paid_until)) - Date.parse(String(before.trial_ends_at))) / 86_400_000;
+  assert.equal(Math.round(gap), 365);
 });

@@ -5,7 +5,9 @@ import { cartTotals, quickCashAmounts } from "../lib/cart";
 import { addDays, zonedDayStart } from "../lib/dates";
 import type { SalesReport } from "../lib/database.types";
 import { chartPoints, describePeriod } from "../lib/format";
-import { trialDaysLeft, trialEndsAt } from "../lib/trial";
+import { createHmac } from "node:crypto";
+import { verifySignature } from "../lib/paymongo";
+import { accessEndsAt, hasAccess, isPro, trialDaysLeft, trialEndsAt } from "../lib/trial";
 
 test("cart totals match complete_sale's rounding", () => {
   // Same numbers as the database test: 3 x 50 + 25.50, less 10, 12% tax.
@@ -69,4 +71,37 @@ test("free trial: 60 days from sign-up, counted in whole days", () => {
   assert.equal(trialDaysLeft(end, Date.parse("2026-11-27T03:00:00.000Z")), 1); // final (partial) day
   assert.equal(trialDaysLeft(end, Date.parse("2026-11-28T02:00:00.000Z")), 0);
   assert.equal(trialDaysLeft(end, Date.parse("2026-12-25T00:00:00.000Z")), 0);
+});
+
+test("KASSIX Pro: access lasts until the later of the trial end and the paid-up date", () => {
+  const trial = { created_at: "2026-01-01T00:00:00Z", trial_ends_at: "2026-03-02T00:00:00+00:00", paid_until: null };
+  assert.equal(accessEndsAt(trial), trial.trial_ends_at);
+  assert.equal(hasAccess(trial, Date.parse("2026-03-01T23:59:59Z")), true);
+  assert.equal(hasAccess(trial, Date.parse("2026-03-02T00:00:00Z")), false);
+
+  const paid = { ...trial, paid_until: "2026-04-01T00:00:00.123456+00:00" };
+  assert.ok(isPro(paid));
+  assert.equal(accessEndsAt(paid), paid.paid_until);
+  assert.equal(hasAccess(paid, Date.parse("2026-03-31T00:00:00Z")), true);
+  assert.equal(hasAccess(paid, Date.parse("2026-04-02T00:00:00Z")), false);
+
+  // Paid time that ended before a (dashboard-extended) trial doesn't cut the trial short.
+  const extended = { ...trial, trial_ends_at: "2026-05-01T00:00:00Z" , paid_until: "2026-04-01T00:00:00Z" };
+  assert.ok(!isPro(extended));
+  assert.equal(accessEndsAt(extended), extended.trial_ends_at);
+});
+
+test("PayMongo webhook signatures", () => {
+  const body = '{"data":{"id":"evt_1","attributes":{"type":"checkout_session.payment.paid"}}}';
+  const sign = (secret: string, t = "1496734173") => createHmac("sha256", secret).update(`${t}.${body}`).digest("hex");
+  const sig = sign("whsk_test");
+
+  assert.ok(verifySignature(body, `t=1496734173,te=${sig},li=`, "whsk_test")); // test mode
+  assert.ok(verifySignature(body, `t=1496734173,te=,li=${sig}`, "whsk_test")); // live mode
+  assert.ok(!verifySignature(body.replace("evt_1", "evt_2"), `t=1496734173,te=${sig},li=`, "whsk_test"));
+  assert.ok(!verifySignature(body, `t=1496734174,te=${sig},li=`, "whsk_test"));
+  assert.ok(!verifySignature(body, `t=1496734173,te=${sig},li=`, "whsk_other"));
+  assert.ok(!verifySignature(body, `t=1496734173,te=,li=`, "whsk_test"));
+  assert.ok(!verifySignature(body, `t=1496734173,te=${"é".repeat(32)},li=`, "whsk_test")); // no throw on odd input
+  assert.ok(!verifySignature(body, null, "whsk_test"));
 });

@@ -17,6 +17,7 @@ type ProfileRow = {
   timezone: string;
   last_receipt_number: number;
   trial_ends_at: string;
+  paid_until: string | null;
   created_at: string;
 };
 
@@ -65,6 +66,19 @@ type SaleItemRow = {
   unit_price: number;
   unit_cost: number;
   subtotal: number;
+};
+
+type PaymentRow = {
+  id: string;
+  user_id: string;
+  plan: "monthly" | "yearly";
+  amount: number;
+  checkout_session_id: string;
+  payment_id: string | null;
+  method: string | null;
+  period_start: string;
+  period_end: string;
+  paid_at: string;
 };
 
 type MovementRow = {
@@ -151,6 +165,12 @@ export type Database = {
           },
         ];
       };
+      payments: {
+        Row: PaymentRow;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -166,6 +186,21 @@ export type Database = {
         Args: { p_period: string };
         Returns: Json;
       };
+      has_access: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      record_payment: {
+        Args: {
+          p_user_id: string;
+          p_plan: string;
+          p_amount: number;
+          p_checkout_session_id: string;
+          p_payment_id?: string | null;
+          p_method?: string | null;
+        };
+        Returns: ProfileRow;
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
@@ -179,6 +214,7 @@ export type Product = ProductRow;
 export type Sale = SaleRow;
 export type SaleItem = SaleItemRow;
 export type Movement = MovementRow;
+export type Payment = PaymentRow;
 export type SaleWithItems = Sale & { sale_items: SaleItem[] };
 export type ProductWithCategory = Product & { categories: { name: string } | null };
 

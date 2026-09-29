@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import type { Database } from "@/lib/database.types";
 
@@ -28,5 +29,14 @@ export async function createClient() {
         }
       },
     },
+  });
+}
+
+/** Service-role client for trusted server code only (the PayMongo webhook). It bypasses RLS. */
+export function createAdminClient() {
+  const key = process.env.SUPABASE_SECRET_KEY;
+  if (!key) throw new Error("SUPABASE_SECRET_KEY isn't set.");
+  return createSupabaseClient<Database>(supabaseEnv().url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
   });
 }

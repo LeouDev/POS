@@ -32,7 +32,7 @@ const UNIQUE_MESSAGES: Record<string, string> = {
 };
 
 export const MISSING_TABLES =
-  "The KASSIX tables aren't in your Supabase database yet. Run supabase/migrations/20260929000000_init.sql in the Supabase SQL editor (or `npx supabase db push`), then reload.";
+  "The KASSIX tables aren't all in your Supabase database yet. Run each file in supabase/migrations/, in order, in the Supabase SQL editor (or `npx supabase db push`), then reload.";
 
 /** Turns a Supabase/Postgres error into a message that is safe and useful to show. */
 export function describeError(error: DbError): string {

@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/auth"];
+// /api/paymongo checks PayMongo's signature instead of a session.
+const PUBLIC_PATHS = ["/login", "/auth", "/api/paymongo"];
 
 // Refreshes the Supabase session cookie on every request and keeps signed-out
 // visitors on the login page. Data access is still enforced by RLS.

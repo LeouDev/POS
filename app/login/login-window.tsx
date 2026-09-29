@@ -8,7 +8,7 @@ import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { Field, fieldIds, TitleBar } from "@/components/ui";
 import { signInSchema, signUpSchema } from "@/lib/schemas";
-import { TRIAL_DAYS } from "@/lib/trial";
+import { PLANS, TRIAL_DAYS } from "@/lib/trial";
 import { signIn, signUp } from "./actions";
 import { safeCall } from "@/lib/actions";
 
@@ -173,7 +173,7 @@ function SignUpForm({ onSent }: { onSent: (email: string) => void }) {
         <Gift aria-hidden size={22} className="flex-none text-brand" />
         <p>
           <b>{TRIAL_DAYS} days free.</b> Use every feature of KASSIX free for {TRIAL_DAYS} days to see if it fits your
-          store. No credit card needed.
+          store. No credit card needed. After that, KASSIX Pro is ₱{PLANS.monthly.amount}/month.
         </p>
       </div>
       <FormError message={error} />

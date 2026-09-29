@@ -15,7 +15,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { signOut } from "@/app/login/actions";
-import { TrialTray } from "@/components/trial";
+import { PlanTray } from "@/components/trial";
 import { cx, Logo } from "@/components/ui";
 
 const NAV: { href: string; label: string; icon: LucideIcon; color: string }[] = [
@@ -34,13 +34,15 @@ export function Shell({
   businessName,
   email,
   timezone,
-  trialEndsAt,
+  accessEndsAt,
+  pro,
   children,
 }: {
   businessName: string;
   email: string;
   timezone: string;
-  trialEndsAt: string;
+  accessEndsAt: string;
+  pro: boolean;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -87,7 +89,13 @@ export function Shell({
           {children}
         </main>
       </div>
-      <Taskbar current={current} businessName={businessName} timezone={timezone} trialEndsAt={trialEndsAt} />
+      <Taskbar
+        current={current}
+        businessName={businessName}
+        timezone={timezone}
+        accessEndsAt={accessEndsAt}
+        pro={pro}
+      />
     </div>
   );
 }
@@ -111,12 +119,14 @@ function Taskbar({
   current,
   businessName,
   timezone,
-  trialEndsAt,
+  accessEndsAt,
+  pro,
 }: {
   current?: (typeof NAV)[number];
   businessName: string;
   timezone: string;
-  trialEndsAt: string;
+  accessEndsAt: string;
+  pro: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -171,7 +181,7 @@ function Taskbar({
           <ShoppingCart aria-hidden size={16} className="text-ok" /> Sell
         </Link>
       )}
-      <TrialTray endsAt={trialEndsAt} />
+      <PlanTray endsAt={accessEndsAt} pro={pro} />
       <Clock timezone={timezone} />
 
       {open && (
