@@ -58,6 +58,7 @@ export async function signUp(input: unknown): Promise<ActionResult<{ confirmEmai
 
 export async function signOut() {
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  // This device only: the default ("global") would also sign out the register and every other device.
+  await supabase.auth.signOut({ scope: "local" });
   redirect("/login");
 }
