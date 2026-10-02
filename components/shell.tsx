@@ -3,6 +3,8 @@
 import {
   Boxes,
   ChartColumn,
+  ChevronRight,
+  Ellipsis,
   LayoutDashboard,
   LogOut,
   Package,
@@ -13,10 +15,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { signOut } from "@/app/login/actions";
-import { PlanTray } from "@/components/trial";
+import { Dialog } from "@/components/dialog";
+import { ThemeContext } from "@/components/theme";
+import { PlanChip, PlanTray } from "@/components/trial";
 import { cx, Logo } from "@/components/ui";
+import type { UiTheme } from "@/lib/database.types";
+import { initials } from "@/lib/format";
 
 const NAV: { href: string; label: string; icon: LucideIcon; color: string }[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, color: "#c00000" },
@@ -30,21 +36,35 @@ const NAV: { href: string; label: string; icon: LucideIcon; color: string }[] = 
 
 const isActive = (pathname: string, href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
-export function Shell({
-  businessName,
-  email,
-  timezone,
-  accessEndsAt,
-  pro,
-  children,
-}: {
+type ShellProps = {
   businessName: string;
   email: string;
   timezone: string;
   accessEndsAt: string;
   pro: boolean;
   children: ReactNode;
-}) {
+};
+
+export function Shell({ theme, ...props }: ShellProps & { theme: UiTheme }) {
+  // <html> carries the theme too, for what is portalled to <body> (dialogs, toasts) and the page
+  // background. Pages outside the app (sign-in, site, billing) never set it, so they stay the original.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (theme === "classic") delete root.dataset.theme;
+    else root.dataset.theme = theme;
+    return () => {
+      delete root.dataset.theme;
+    };
+  }, [theme]);
+
+  return (
+    <ThemeContext value={theme}>
+      {theme === "classic" ? <ClassicShell {...props} /> : <IosShell theme={theme} {...props} />}
+    </ThemeContext>
+  );
+}
+
+function ClassicShell({ businessName, email, timezone, accessEndsAt, pro, children }: ShellProps) {
   const pathname = usePathname();
   const current = NAV.find((n) => isActive(pathname, n.href));
 
@@ -240,5 +260,181 @@ function Clock({ timezone }: { timezone: string }) {
     <div className="hidden h-8 min-w-20 items-center justify-center border [border-color:#808080_#fff_#fff_#808080] px-2 text-[12px] tabular-nums sm:flex lg:h-7">
       {time}
     </div>
+  );
+}
+
+// White and Black: a floating glass sidebar on iPad and desktop; on phones a glass tab bar, a Sell
+// button and a More sheet. Content sits on opaque cards; glass is only used on this floating chrome.
+const TABS = ["/dashboard", "/sales", "/products"];
+
+function IosShell({ theme, businessName, email, accessEndsAt, pro, children }: Omit<ShellProps, "timezone"> & { theme: UiTheme }) {
+  const pathname = usePathname();
+  const [more, setMore] = useState(false);
+  const onMore = !NAV.some((n) => TABS.includes(n.href) && isActive(pathname, n.href)) && !isActive(pathname, "/sale");
+
+  return (
+    <div data-theme={theme} className="flex h-dvh">
+      <a
+        href="#main"
+        className="btn btn-default absolute top-2 left-2 z-[80] -translate-y-20 focus-visible:translate-y-0"
+      >
+        Skip to content
+      </a>
+      <nav aria-label="Main" className="glass m-3 mr-0 hidden w-[236px] flex-none flex-col gap-0.5 rounded-[28px] px-3 pt-5 pb-3 lg:flex">
+        <div className="flex flex-col gap-[3px] px-3 pb-4">
+          <IosLogo />
+          <span className="text-[12px] font-medium text-[var(--label2)]">Point of sale system</span>
+        </div>
+        <ul className="flex flex-col gap-0.5">
+          {NAV.map((item) => {
+            const Icon = item.icon;
+            return (
+              <li key={item.href}>
+                <Link
+                  href={item.href}
+                  aria-current={isActive(pathname, item.href) ? "page" : undefined}
+                  className="flex h-10 items-center gap-3 rounded-[14px] px-3 text-[15px] font-medium !text-[var(--label)] no-underline hover:bg-[var(--fill)] aria-[current=page]:bg-[var(--sel)] aria-[current=page]:font-semibold aria-[current=page]:!text-[var(--tint)]"
+                >
+                  <Icon aria-hidden size={19} className="flex-none" />
+                  {item.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+        <div className="flex-1" />
+        <PlanChip
+          endsAt={accessEndsAt}
+          pro={pro}
+          className="mx-1 mb-2 rounded-[14px] bg-[color-mix(in_srgb,currentColor_12%,transparent)] px-3 py-2"
+        />
+        <Account businessName={businessName} email={email} />
+      </nav>
+
+      <main
+        id="main"
+        tabIndex={-1}
+        className="flex min-h-0 min-w-0 flex-1 flex-col outline-none max-lg:pb-[calc(72px+max(16px,env(safe-area-inset-bottom)))]"
+      >
+        {children}
+      </main>
+
+      <div className="fixed inset-x-4 bottom-[max(16px,env(safe-area-inset-bottom))] z-30 flex items-center gap-2.5 lg:hidden">
+        <nav aria-label="Main" className="glass grid h-16 flex-1 grid-cols-4 items-center rounded-full px-1.5">
+          {NAV.filter((n) => TABS.includes(n.href)).map((item) => (
+            <Tab key={item.href} href={item.href} icon={item.icon} label={item.label} active={isActive(pathname, item.href)} />
+          ))}
+          <Tab icon={Ellipsis} label="More" active={onMore || more} onClick={() => setMore(true)} />
+        </nav>
+        {!isActive(pathname, "/sale") && (
+          <Link
+            href="/sale"
+            aria-label="New sale"
+            className="grid size-16 flex-none place-items-center rounded-full bg-[var(--tint)] !text-white shadow-[0_10px_24px_color-mix(in_srgb,var(--tint)_40%,transparent)]"
+          >
+            <ShoppingCart aria-hidden size={26} />
+          </Link>
+        )}
+      </div>
+
+      <Dialog open={more} onClose={() => setMore(false)} title="More" width={420}>
+        <div className="flex flex-col gap-4 pb-2">
+          <Account businessName={businessName} email={email} />
+          <PlanChip
+            endsAt={accessEndsAt}
+            pro={pro}
+            className="self-start rounded-full bg-[color-mix(in_srgb,currentColor_12%,transparent)] px-3.5 py-2"
+          />
+          <ul className="card overflow-hidden pl-[18px]">
+            {NAV.filter((n) => !TABS.includes(n.href) && n.href !== "/sale").map((item) => {
+              const Icon = item.icon;
+              return (
+                <li key={item.href} className="border-b-[0.5px] border-[var(--sep)] last:border-b-0">
+                  <Link
+                    href={item.href}
+                    onClick={() => setMore(false)}
+                    aria-current={isActive(pathname, item.href) ? "page" : undefined}
+                    className="flex h-[50px] items-center gap-3 pr-4 text-[17px] !text-[var(--label)] no-underline"
+                  >
+                    <Icon aria-hidden size={20} className="flex-none text-[var(--tint)]" />
+                    <span className="flex-1">{item.label}</span>
+                    <ChevronRight aria-hidden size={16} className="text-[var(--label3)]" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <form action={signOut}>
+            <button type="submit" className="card h-[50px] w-full text-[17px] text-[var(--red)]">
+              Log off
+            </button>
+          </form>
+        </div>
+      </Dialog>
+    </div>
+  );
+}
+
+function IosLogo() {
+  return (
+    <span className="text-[25px] leading-none font-extrabold tracking-[-0.02em] text-[var(--label)]">
+      KASSI<span className="text-[var(--red)]">X</span>
+    </span>
+  );
+}
+
+function Account({ businessName, email }: { businessName: string; email: string }) {
+  return (
+    <div className="flex items-center gap-2.5 rounded-[18px] bg-[var(--fill)] p-2.5">
+      <span
+        aria-hidden
+        className="grid size-[34px] flex-none place-items-center rounded-full bg-[var(--tint)] text-[13px] font-bold text-white"
+      >
+        {initials(businessName)}
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate text-[13px] font-semibold">{businessName}</span>
+        <span className="truncate text-[12px] text-[var(--label2)]">{email}</span>
+      </div>
+      <form action={signOut} className="flex">
+        <button type="submit" aria-label="Log off" title="Log off" className="grid size-8 place-items-center rounded-full text-[var(--label2)]">
+          <LogOut aria-hidden size={17} />
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function Tab({
+  href,
+  icon: Icon,
+  label,
+  active,
+  onClick,
+}: {
+  href?: string;
+  icon: LucideIcon;
+  label: string;
+  active: boolean;
+  onClick?: () => void;
+}) {
+  const className = cx(
+    "flex h-[54px] flex-col items-center justify-center gap-[3px] rounded-full text-[10px] no-underline",
+    active ? "bg-[var(--sel)] font-semibold !text-[var(--tint)]" : "font-medium !text-[var(--label)]",
+  );
+  const content = (
+    <>
+      <Icon aria-hidden size={22} />
+      {label}
+    </>
+  );
+  return href ? (
+    <Link href={href} aria-current={active ? "page" : undefined} className={className}>
+      {content}
+    </Link>
+  ) : (
+    <button type="button" aria-haspopup="dialog" onClick={onClick} className={className}>
+      {content}
+    </button>
   );
 }

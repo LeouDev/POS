@@ -2,10 +2,10 @@
 
 import { Printer } from "lucide-react";
 
-export function PrintButton() {
+export function PrintButton({ label = "Print" }: { label?: string }) {
   return (
     <button type="button" className="btn" onClick={() => window.print()}>
-      <Printer aria-hidden size={16} /> Print
+      <Printer aria-hidden size={16} /> {label}
     </button>
   );
 }

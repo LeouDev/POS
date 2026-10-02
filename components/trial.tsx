@@ -19,14 +19,19 @@ function useDaysLeft(endsAt: string) {
 
 const daysText = (days: number) => `${days} day${days === 1 ? "" : "s"} left`;
 
-/** Taskbar tray cell next to the clock: trial or KASSIX Pro days left, red in the final week. */
-export function PlanTray({ endsAt, pro }: { endsAt: string; pro: boolean }) {
+/** Days left; when time runs out while KASSIX is open, re-renders the layout, which sends the owner to /billing. */
+function usePlanDays(endsAt: string) {
   const days = useDaysLeft(endsAt);
   const router = useRouter();
-  // Time ran out while KASSIX was open: re-render the layout, which sends the owner to /billing.
   useEffect(() => {
     if (days === 0) router.refresh();
   }, [days, router]);
+  return days;
+}
+
+/** Taskbar tray cell next to the clock: trial or KASSIX Pro days left, red in the final week. */
+export function PlanTray({ endsAt, pro }: { endsAt: string; pro: boolean }) {
+  const days = usePlanDays(endsAt);
   if (days === null) return null;
   const Icon = pro ? Crown : CalendarClock;
   return (
@@ -49,6 +54,27 @@ export function PlanTray({ endsAt, pro }: { endsAt: string; pro: boolean }) {
           </span>
         </>
       )}
+    </Link>
+  );
+}
+
+/** White/Black: the trial or KASSIX Pro chip (sidebar, More sheet, phone dashboard), red in the final week. */
+export function PlanChip({ endsAt, pro, short, className }: { endsAt: string; pro: boolean; short?: boolean; className?: string }) {
+  const days = usePlanDays(endsAt);
+  if (days === null) return null;
+  const Icon = pro ? Crown : CalendarClock;
+  return (
+    <Link
+      href="/billing"
+      title={pro ? "Your KASSIX Pro plan" : "Your free trial"}
+      className={cx(
+        "flex flex-none items-center gap-2 text-[13px] font-semibold no-underline",
+        days <= 7 ? "!text-[var(--red)]" : "!text-[var(--tint)]",
+        className,
+      )}
+    >
+      <Icon aria-hidden size={15} className="flex-none" />
+      {days === 0 ? "Ended" : short ? `${days}d left` : `${pro ? "Pro" : "Free trial"}: ${daysText(days)}`}
     </Link>
   );
 }

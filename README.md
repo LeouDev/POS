@@ -108,6 +108,20 @@ password?* on the sign-in form emails a link to `/reset-password`.
   created. Products already in KASSIX (same SKU, or same name without a SKU) are skipped, never
   overwritten, so stock still only changes through Inventory and importing a file twice is safe.
 
+## Appearance
+
+Settings → Appearance offers three looks per account: **The Original** (Windows 98, the default),
+**White** and **Black** (iOS 26 style: glass sidebar and tab bar, opaque cards). The choice is stored
+in `profiles.ui_theme`. Signing in, the public site and billing always use the original.
+
+- The app shell sets `data-theme` on its root and on `<html>` (for dialogs and toasts portalled to
+  `<body>`), so pages outside the app never carry it.
+- `app/globals.css` restyles the existing component classes under `[data-theme]` and remaps the Win98
+  colour tokens to system colours, so most markup is shared. Theme-specific tweaks use the `ios:`
+  variant; screens whose layout differs (dashboard, register, Sales with its receipt panel, Settings)
+  branch on the theme (`Window` and server pages read it from the profile, client components from
+  `useIos()`).
+
 ## How the data stays correct
 
 - Every table has Row Level Security; each user only sees and changes their own rows.

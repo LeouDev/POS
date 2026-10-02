@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { Dialog } from "@/components/dialog";
 import { useToast } from "@/components/toast";
-import { Field, fieldIds } from "@/components/ui";
+import { cx, Field, fieldIds } from "@/components/ui";
 import type { Product } from "@/lib/database.types";
 import { adjustStockSchema, type AdjustStockInput } from "@/lib/schemas";
 import { adjustStock } from "./actions";
@@ -18,8 +18,17 @@ export function AdjustStockButton({ product }: { product: Target }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" className="btn btn-sm" onClick={() => setOpen(true)} aria-label={`Restock or adjust ${product.name}`}>
-        <PackagePlus aria-hidden size={16} /> <span className="hidden sm:inline">Restock / adjust</span>
+      <button
+        type="button"
+        className={cx(
+          "btn btn-sm",
+          product.stock_quantity === 0 ? "ios:!bg-[var(--tint)] ios:!text-white" : "ios:!text-[var(--tint)]",
+        )}
+        onClick={() => setOpen(true)}
+        aria-label={`Restock or adjust ${product.name}`}
+      >
+        <PackagePlus aria-hidden size={16} className="ios:hidden" />{" "}
+        <span className="hidden sm:inline ios:inline">Restock / adjust</span>
       </button>
       <Dialog open={open} onClose={() => setOpen(false)} title={`Stock: ${product.name}`} width={420}>
         <AdjustForm product={product} onDone={() => setOpen(false)} />
@@ -54,7 +63,7 @@ function AdjustForm({ product, onDone }: { product: Target; onDone: () => void }
         <span>On hand now</span>
         <span className="lcd text-[30px]">{product.stock_quantity}</span>
       </div>
-      <div className="grid grid-cols-2 gap-1" role="group" aria-label="Kind of change">
+      <div className="segmented grid grid-cols-2 gap-1" role="group" aria-label="Kind of change">
         <button type="button" className="btn" aria-pressed={restock} onClick={() => setValue("type", "RESTOCK")}>
           <PackagePlus aria-hidden size={16} /> Restock
         </button>
@@ -63,7 +72,7 @@ function AdjustForm({ product, onDone }: { product: Target; onDone: () => void }
         </button>
       </div>
       {formError && (
-        <p role="alert" className="border border-brand bg-[#fff0f0] p-2 text-[13px]">
+        <p role="alert" className="alert-box">
           {formError}
         </p>
       )}

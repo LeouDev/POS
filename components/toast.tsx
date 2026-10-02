@@ -40,14 +40,23 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((t) => {
           const { title, icon: Icon, color } = TONES[t.tone];
           return (
-            <div key={t.id} role={t.tone === "error" ? "alert" : undefined} className="window window-shadow pointer-events-auto">
-              <div className="titlebar">
-                <span className="flex-1">{title}</span>
-                <button type="button" className="titlebar-button" aria-label="Dismiss" onClick={() => dismiss(t.id)}>
+            <div
+              key={t.id}
+              role={t.tone === "error" ? "alert" : undefined}
+              className="window window-shadow pointer-events-auto relative"
+            >
+              <div className="titlebar ios:absolute ios:top-2 ios:right-2">
+                <span className="flex-1 ios:sr-only">{title}</span>
+                <button
+                  type="button"
+                  className="titlebar-button ios:!size-7 ios:!border-0 ios:!bg-[var(--fill)] ios:!text-[17px] ios:!shadow-none"
+                  aria-label="Dismiss"
+                  onClick={() => dismiss(t.id)}
+                >
                   ×
                 </button>
               </div>
-              <div className="flex items-start gap-3 p-3">
+              <div className="flex items-start gap-3 p-3 ios:py-3.5 ios:pr-11 ios:pl-4">
                 <Icon aria-hidden size={22} className={`flex-none ${color}`} />
                 <p className="pt-0.5">{t.message}</p>
               </div>

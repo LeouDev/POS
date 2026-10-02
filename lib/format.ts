@@ -1,4 +1,4 @@
-import type { PaymentMethod, Product, SalesReport } from "@/lib/database.types";
+import type { PaymentMethod, Product, SalesReport, UiTheme } from "@/lib/database.types";
 
 export const PAYMENT_METHODS: { value: PaymentMethod; label: string; color: string }[] = [
   { value: "cash", label: "Cash", color: "#008000" },
@@ -6,6 +6,22 @@ export const PAYMENT_METHODS: { value: PaymentMethod; label: string; color: stri
   { value: "gcash", label: "GCash", color: "#1084d0" },
   { value: "other", label: "Other", color: "#e8c547" },
 ];
+
+// Appearance choices in Settings: color is the background (and browser bar), card the window on it.
+export const THEMES: { value: UiTheme; label: string; color: string; card: string }[] = [
+  { value: "classic", label: "The Original", color: "#008080", card: "#c0c0c0" },
+  { value: "light", label: "White", color: "#f2f2f7", card: "#ffffff" },
+  { value: "dark", label: "Black", color: "#000000", card: "#1c1c1e" },
+];
+
+/** "AN" for "Aling Nena's Store": the account avatar in White/Black. */
+export const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0] ?? "")
+    .join("")
+    .toUpperCase() || "K";
 
 export const paymentLabel = (method: string) =>
   PAYMENT_METHODS.find((m) => m.value === method)?.label ?? method;
@@ -61,6 +77,7 @@ export function formatCompactMoney(amount: number, currency: string) {
     currency,
     currencyDisplay: "narrowSymbol",
     notation: "compact",
+    minimumFractionDigits: 0, // explicit, so the server and browsers agree ("₱2K", not "₱2.0K")
     maximumFractionDigits: 1,
   }).format(amount);
 }

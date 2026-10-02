@@ -87,7 +87,7 @@ function ImportDialog({ onClose }: { onClose: () => void }) {
         </label>
 
         {file?.error && (
-          <p role="alert" className="flex items-start gap-2 border border-brand bg-[#fff0f0] p-2">
+          <p role="alert" className="alert-box flex items-start gap-2">
             <CircleAlert aria-hidden size={18} className="flex-none text-brand" /> {file.error}
           </p>
         )}

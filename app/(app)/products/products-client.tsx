@@ -23,7 +23,7 @@ export function NewProductButton({ categories, currency }: { categories: Categor
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" className="btn btn-default" onClick={() => setOpen(true)}>
+      <button type="button" className="btn btn-default ios:!min-h-11 ios:!px-[18px]" onClick={() => setOpen(true)}>
         <PackagePlus aria-hidden size={16} /> New product
       </button>
       <ProductDialog open={open} onClose={() => setOpen(false)} product={null} categories={categories} currency={currency} />
@@ -50,6 +50,9 @@ export function SampleProductsButton() {
     </button>
   );
 }
+
+// White/Black: row actions are small round buttons, as in the iOS mock-ups.
+const ROUND = "ios:!min-h-[34px] ios:!min-w-[34px] ios:text-[var(--label2)]";
 
 export function ProductsTable({
   products,
@@ -108,7 +111,7 @@ export function ProductsTable({
             {products.map((p) => (
               <tr key={p.id} className={cx(!p.is_active && "text-neutral-500")}>
                 <td>
-                  <div className="font-bold">{p.name}</div>
+                  <div className="font-bold ios:font-semibold">{p.name}</div>
                   <div className="text-[12px] text-neutral-600">
                     {p.sku && <span className="font-mono">{p.sku}</span>}
                     <span className="md:hidden">
@@ -119,20 +122,28 @@ export function ProductsTable({
                 </td>
                 <td className="hidden md:table-cell">{p.categories?.name ?? <span className="text-neutral-500">None</span>}</td>
                 <td className="text-right tabular-nums">{formatMoney(p.price, currency)}</td>
-                <td className="hidden text-right tabular-nums lg:table-cell">{formatMoney(p.cost, currency)}</td>
+                <td className="hidden text-right tabular-nums lg:table-cell ios:text-[var(--label2)]">{formatMoney(p.cost, currency)}</td>
                 <td className="text-right">
-                  <div className="font-bold tabular-nums">{p.stock_quantity}</div>
-                  {p.is_active && <StockBadge product={p} />}
+                  <div className="ios:flex ios:items-center ios:justify-end ios:gap-2">
+                    <div className="font-bold tabular-nums">{p.stock_quantity}</div>
+                    {p.is_active && <StockBadge product={p} />}
+                  </div>
                 </td>
                 <td className="hidden sm:table-cell">{p.is_active ? "Active" : "Archived"}</td>
                 <td>
                   <div className="flex justify-end gap-1">
-                    <button type="button" className="btn btn-icon" title="Edit" aria-label={`Edit ${p.name}`} onClick={() => setEditing(p)}>
+                    <button
+                      type="button"
+                      className={`btn btn-icon ${ROUND}`}
+                      title="Edit"
+                      aria-label={`Edit ${p.name}`}
+                      onClick={() => setEditing(p)}
+                    >
                       <Pencil aria-hidden size={16} />
                     </button>
                     <button
                       type="button"
-                      className="btn btn-icon"
+                      className={`btn btn-icon ${ROUND}`}
                       title={p.is_active ? "Archive" : "Restore"}
                       aria-label={`${p.is_active ? "Archive" : "Restore"} ${p.name}`}
                       disabled={busyId === p.id}
@@ -142,7 +153,7 @@ export function ProductsTable({
                     </button>
                     <button
                       type="button"
-                      className="btn btn-icon btn-danger"
+                      className={`btn btn-icon btn-danger ${ROUND} ios:!text-[var(--red)]`}
                       title="Delete"
                       aria-label={`Delete ${p.name}`}
                       onClick={() => setDeleting(p)}
@@ -187,7 +198,8 @@ export function CategoriesButton({ categories, counts }: { categories: Category[
   return (
     <>
       <button type="button" className="btn" onClick={() => setOpen(true)}>
-        <FolderTree aria-hidden size={16} className="text-[#806000]" /> Categories…
+        <FolderTree aria-hidden size={16} className="text-[#806000] ios:text-current" /> Categories
+        <span className="-ml-1.5 ios:hidden">…</span>
       </button>
       <Dialog open={open} onClose={() => setOpen(false)} title="Categories" width={440}>
         <CategoryManager categories={categories} counts={counts} />
@@ -255,7 +267,7 @@ function CategoryManager({ categories, counts }: { categories: Category[]; count
       </form>
 
       {listError && (
-        <p role="alert" className="border border-brand bg-[#fff0f0] p-2 text-[13px]">
+        <p role="alert" className="alert-box">
           {listError}
         </p>
       )}

@@ -1,4 +1,5 @@
 import { Database, LogOut } from "lucide-react";
+import type { Viewport } from "next";
 import { redirect, unstable_rethrow } from "next/navigation";
 import type { ReactNode } from "react";
 import { signOut } from "@/app/login/actions";
@@ -6,7 +7,17 @@ import { Shell } from "@/components/shell";
 import { TitleBar } from "@/components/ui";
 import { MISSING_TABLES } from "@/lib/actions";
 import { getProfile, getSession } from "@/lib/data";
+import { THEMES } from "@/lib/format";
 import { accessEndsAt, hasAccess, isPro } from "@/lib/trial";
+
+// The browser and home-screen app bar match the owner's appearance.
+export async function generateViewport(): Promise<Viewport> {
+  const profile = await getProfile().catch((err: unknown) => {
+    unstable_rethrow(err);
+    return null;
+  });
+  return { themeColor: THEMES.find((t) => t.value === profile?.ui_theme)?.color ?? THEMES[0].color };
+}
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   // Production hides server error messages, so the likeliest setup mistake (migration not run)
@@ -23,6 +34,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <Shell
+      theme={profile.ui_theme ?? "classic"}
       businessName={profile.business_name}
       email={email}
       timezone={profile.timezone}

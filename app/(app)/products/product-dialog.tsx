@@ -81,7 +81,7 @@ function ProductForm({
   return (
     <form onSubmit={onSubmit} noValidate className="grid gap-3 sm:grid-cols-2">
       {formError && (
-        <p role="alert" className="border border-brand bg-[#fff0f0] p-2 text-[13px] sm:col-span-2">
+        <p role="alert" className="alert-box sm:col-span-2">
           {formError}
         </p>
       )}

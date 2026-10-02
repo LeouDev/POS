@@ -6,6 +6,7 @@ export type Json = string | number | boolean | null | { [key: string]: Json | un
 export type PaymentMethod = "cash" | "card" | "gcash" | "other";
 export type MovementType = "SALE" | "RESTOCK" | "ADJUSTMENT" | "VOID";
 export type SaleStatus = "completed" | "voided";
+export type UiTheme = "classic" | "light" | "dark";
 
 type ProfileRow = {
   id: string;
@@ -18,6 +19,7 @@ type ProfileRow = {
   last_receipt_number: number;
   trial_ends_at: string;
   paid_until: string | null;
+  ui_theme: UiTheme;
   created_at: string;
 };
 
@@ -100,7 +102,7 @@ export type Database = {
       profiles: {
         Row: ProfileRow;
         Insert: Partial<Pick<ProfileRow, "user_id" | "business_name" | "owner_name" | "currency" | "tax_rate" | "timezone">>;
-        Update: Partial<Pick<ProfileRow, "business_name" | "owner_name" | "currency" | "tax_rate" | "timezone">>;
+        Update: Partial<Pick<ProfileRow, "business_name" | "owner_name" | "currency" | "tax_rate" | "timezone" | "ui_theme">>;
         Relationships: [];
       };
       categories: {

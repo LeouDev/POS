@@ -5,8 +5,11 @@ import { Skeleton, TitleBar } from "@/components/ui";
 export default function Loading() {
   return (
     <section aria-busy="true" aria-label="Loading register" className="window flex min-h-0 flex-1 flex-col">
-      <TitleBar title="New Sale" icon={ShoppingCart} />
-      <div className="flex min-h-0 flex-1 gap-2 p-2 lg:grid lg:grid-cols-[minmax(0,1.55fr)_minmax(340px,1fr)]">
+      <div className="ios:hidden">
+        <TitleBar title="New Sale" icon={ShoppingCart} />
+      </div>
+      <p className="hidden px-4 pt-3 text-[34px] font-bold tracking-[-0.025em] ios:block lg:pt-[22px] lg:pl-2">New Sale</p>
+      <div className="flex min-h-0 flex-1 gap-2 p-2 lg:grid lg:grid-cols-[minmax(0,1.55fr)_minmax(340px,1fr)] ios:gap-3 ios:px-4 ios:lg:pr-3 ios:lg:pl-2">
         <div className="flex min-h-0 flex-1 flex-col gap-2">
           <Skeleton className="h-11" />
           <div className="flex gap-1">

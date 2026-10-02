@@ -1,13 +1,13 @@
-import { CalendarClock, Crown, LogOut, Settings } from "lucide-react";
+import { CalendarClock, ChevronRight, Crown, LogOut, Settings } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { signOut } from "@/app/login/actions";
-import { Window } from "@/components/ui";
+import { Window } from "@/components/window";
 import { DaysLeft } from "@/components/trial";
 import { getProfile, getSession } from "@/lib/data";
 import { formatDateTime } from "@/lib/format";
 import { accessEndsAt, isPro, TRIAL_DAYS } from "@/lib/trial";
-import { SettingsForm } from "./settings-form";
+import { SettingsActions, SettingsForm } from "./settings-form";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -17,6 +17,37 @@ export default async function SettingsPage() {
   if (!timezones.includes(profile.timezone)) timezones.unshift(profile.timezone);
   const pro = isPro(profile);
   const endsAt = accessEndsAt(profile);
+
+  if (profile.ui_theme === "light" || profile.ui_theme === "dark") {
+    const Icon = pro ? Crown : CalendarClock;
+    return (
+      <Window title="Settings" toolbar={<SettingsActions />} status={<span className="flex-1">Signed in as {email}</span>}>
+        <div className="flex w-full max-w-2xl flex-col">
+          <Link href="/billing" className="card mb-[22px] flex items-center gap-3 rounded-[26px] px-4 py-3.5 !text-[var(--label)] no-underline">
+            <span className="grid size-11 flex-none place-items-center rounded-[13px] bg-[var(--tint)] text-white">
+              <Icon aria-hidden size={22} />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="text-[17px] font-semibold">{pro ? "KASSIX Pro" : "Free trial"}</span>
+              <span className="text-[13px] text-[var(--label2)]">
+                {pro ? "Paid until" : "Ends"} {formatDateTime(endsAt, profile.timezone, "date")} <DaysLeft endsAt={endsAt} />
+              </span>
+            </span>
+            <span className="flex items-center gap-0.5 text-[15px] font-semibold text-[var(--tint)]">
+              {pro ? "Add time" : "Get Pro"}
+              <ChevronRight aria-hidden size={16} />
+            </span>
+          </Link>
+          <SettingsForm profile={profile} timezones={timezones} />
+          <form action={signOut}>
+            <button type="submit" className="card h-[50px] w-full rounded-[26px] text-[17px] text-[var(--red)]">
+              Log off
+            </button>
+          </form>
+        </div>
+      </Window>
+    );
+  }
 
   return (
     <Window title="Settings" icon={Settings} status={<span className="flex-1">Signed in as {email}</span>}>

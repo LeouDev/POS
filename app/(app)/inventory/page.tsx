@@ -4,7 +4,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { FilterForm } from "@/components/filter-form";
-import { EmptyState, Pager, StockBadge, Window, withParams } from "@/components/ui";
+import { cx, EmptyState, IOS_PILL, Kpi, Pager, StockBadge, withParams } from "@/components/ui";
+import { Window } from "@/components/window";
 import { describeError } from "@/lib/actions";
 import { getProducts, getProfile, getSession, param } from "@/lib/data";
 import type { MovementType } from "@/lib/database.types";
@@ -16,22 +17,24 @@ export const metadata: Metadata = { title: "Inventory" };
 const PAGE_SIZE = 25;
 const MOVEMENT_TYPES: MovementType[] = ["SALE", "RESTOCK", "ADJUSTMENT", "VOID"];
 const TYPE_STYLES: Record<MovementType, string> = {
-  SALE: "bg-navy text-white",
-  RESTOCK: "bg-ok text-white",
-  ADJUSTMENT: "bg-folder text-black",
-  VOID: "bg-maroon text-white",
+  SALE: "bg-navy text-white ios:text-[var(--tint)]",
+  RESTOCK: "bg-ok text-white ios:text-[var(--green)]",
+  ADJUSTMENT: "bg-folder text-black ios:text-[var(--orange)]",
+  VOID: "bg-maroon text-white ios:text-[var(--red)]",
 };
 
 export default async function InventoryPage(props: PageProps<"/inventory">) {
   const sp = await props.searchParams;
   const tab = param(sp.tab) === "log" ? "log" : "stock";
+  const { ui_theme } = await getProfile();
+  const ios = ui_theme === "light" || ui_theme === "dark";
 
   return (
     <Window
       title="Inventory"
       icon={Boxes}
       toolbar={
-        <nav aria-label="Inventory views" className="flex gap-0.5 self-end pl-1">
+        <nav aria-label="Inventory views" className="segmented flex gap-0.5 self-end pl-1 ios:self-auto ios:p-[3px]">
           <Link href="/inventory" className="tab" aria-current={tab === "stock" ? "page" : undefined}>
             <Boxes aria-hidden size={16} /> Stock levels
           </Link>
@@ -41,14 +44,14 @@ export default async function InventoryPage(props: PageProps<"/inventory">) {
         </nav>
       }
     >
-      {tab === "stock" ? <StockLevels sp={sp} /> : <MovementLog sp={sp} />}
+      {tab === "stock" ? <StockLevels sp={sp} ios={ios} /> : <MovementLog sp={sp} />}
     </Window>
   );
 }
 
 type SearchParams = Awaited<PageProps<"/inventory">["searchParams"]>;
 
-async function StockLevels({ sp }: { sp: SearchParams }) {
+async function StockLevels({ sp, ios }: { sp: SearchParams; ios: boolean }) {
   const q = param(sp.q).trim().slice(0, 50).toLowerCase();
   const level = param(sp.level);
   const products = (await getProducts()).filter((p) => p.is_active);
@@ -77,28 +80,41 @@ async function StockLevels({ sp }: { sp: SearchParams }) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="grid flex-1 grid-cols-3 gap-2 sm:max-w-md">
-          <Stat label="Products" value={products.length} />
-          <Stat label="Low" value={low} tone={low ? "warn" : undefined} />
-          <Stat label="Out" value={out} tone={out ? "bad" : undefined} />
-        </div>
-        <FilterForm key={JSON.stringify(sp)} action="/inventory" className="flex flex-1 flex-wrap justify-end gap-1.5">
+    <div className="flex flex-col gap-3 ios:gap-3.5">
+      <div className="flex flex-wrap items-end gap-3 ios:flex-col ios:items-stretch ios:gap-3.5">
+        {ios ? (
+          <div className="grid grid-cols-3 gap-2.5 lg:gap-3">
+            <Kpi label="Products" value={products.length} className="px-[18px] py-3.5" valueClassName="text-[28px]" />
+            <Kpi label="Low" value={low} tone={low ? "warn" : undefined} className="px-[18px] py-3.5" valueClassName="text-[28px]" />
+            <Kpi label="Out" value={out} tone={out ? "bad" : undefined} className="px-[18px] py-3.5" valueClassName="text-[28px]" />
+          </div>
+        ) : (
+          <div className="grid flex-1 grid-cols-3 gap-2 sm:max-w-md">
+            <Stat label="Products" value={products.length} />
+            <Stat label="Low" value={low} tone={low ? "warn" : undefined} />
+            <Stat label="Out" value={out} tone={out ? "bad" : undefined} />
+          </div>
+        )}
+        <FilterForm key={JSON.stringify(sp)} action="/inventory" className="flex flex-1 flex-wrap justify-end gap-1.5 ios:gap-2">
           <input
             type="search"
             name="q"
             defaultValue={param(sp.q)}
             placeholder="Search name or SKU"
             aria-label="Search stock"
-            className="field w-full sm:w-52"
+            className="field w-full sm:w-52 ios:sm:w-auto ios:sm:flex-1"
           />
-          <select name="level" defaultValue={level} aria-label="Stock level" className="field flex-1 sm:w-40 sm:flex-none">
+          <select
+            name="level"
+            defaultValue={level}
+            aria-label="Stock level"
+            className="field flex-1 sm:w-40 sm:flex-none ios:!rounded-full ios:!bg-[var(--card)] ios:sm:w-44"
+          >
             <option value="">All stock levels</option>
             <option value="low">Low or out</option>
             <option value="out">Out of stock</option>
           </select>
-          <button type="submit" className="btn btn-icon" aria-label="Search">
+          <button type="submit" className="btn btn-icon ios:!hidden" aria-label="Search">
             <Search aria-hidden size={16} />
           </button>
         </FilterForm>
@@ -132,7 +148,7 @@ async function StockLevels({ sp }: { sp: SearchParams }) {
               {shown.map((p) => (
                 <tr key={p.id}>
                   <td>
-                    <div className="font-bold">{p.name}</div>
+                    <div className="font-bold ios:font-semibold">{p.name}</div>
                     <div className="text-[12px] text-neutral-600">
                       {[p.sku, p.categories?.name].filter(Boolean).join(" · ") || "No category"}
                     </div>
@@ -140,8 +156,8 @@ async function StockLevels({ sp }: { sp: SearchParams }) {
                       <StockBadge product={p} />
                     </div>
                   </td>
-                  <td className="text-right text-[16px] font-bold tabular-nums">{p.stock_quantity}</td>
-                  <td className="hidden text-right tabular-nums sm:table-cell">{p.low_stock_threshold}</td>
+                  <td className="text-right text-[16px] font-bold tabular-nums ios:text-[20px]">{p.stock_quantity}</td>
+                  <td className="hidden text-right tabular-nums sm:table-cell ios:text-[var(--label2)]">{p.low_stock_threshold}</td>
                   <td className="hidden md:table-cell">
                     <StockBadge product={p} />
                   </td>
@@ -150,7 +166,7 @@ async function StockLevels({ sp }: { sp: SearchParams }) {
                       <AdjustStockButton product={p} />
                       <Link
                         href={`/inventory?tab=log&product=${p.id}`}
-                        className="btn btn-sm"
+                        className="btn btn-sm ios:!w-[34px] ios:!px-0 ios:!text-[var(--label2)]"
                         aria-label={`Stock history for ${p.name}`}
                         title="History"
                       >
@@ -202,9 +218,14 @@ async function MovementLog({ sp }: { sp: SearchParams }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <FilterForm key={JSON.stringify(sp)} action="/inventory" className="flex flex-wrap justify-end gap-1.5">
+      <FilterForm key={JSON.stringify(sp)} action="/inventory" className="flex flex-wrap justify-end gap-1.5 ios:gap-2">
         <input type="hidden" name="tab" value="log" />
-        <select name="product" defaultValue={productId} aria-label="Product" className="field flex-1 sm:w-56 sm:flex-none">
+        <select
+          name="product"
+          defaultValue={productId}
+          aria-label="Product"
+          className="field flex-1 sm:w-56 sm:flex-none ios:!rounded-full ios:!bg-[var(--card)]"
+        >
           <option value="">All products</option>
           {products.map((p) => (
             <option key={p.id} value={p.id}>
@@ -213,7 +234,12 @@ async function MovementLog({ sp }: { sp: SearchParams }) {
             </option>
           ))}
         </select>
-        <select name="type" defaultValue={type ?? ""} aria-label="Movement type" className="field flex-1 sm:w-40 sm:flex-none">
+        <select
+          name="type"
+          defaultValue={type ?? ""}
+          aria-label="Movement type"
+          className="field flex-1 sm:w-40 sm:flex-none ios:!rounded-full ios:!bg-[var(--card)]"
+        >
           <option value="">All changes</option>
           <option value="SALE">Sales</option>
           <option value="RESTOCK">Restocks</option>
@@ -246,7 +272,7 @@ async function MovementLog({ sp }: { sp: SearchParams }) {
                     <div className="text-[12px] text-neutral-600 sm:hidden">{m.notes}</div>
                   </td>
                   <td className="whitespace-nowrap">
-                    <span className={`mr-2 inline-block border border-black px-1 text-[11px] font-bold ${TYPE_STYLES[m.type]}`}>
+                    <span className={cx("mr-2 inline-block border border-black px-1 text-[11px] font-bold", IOS_PILL, TYPE_STYLES[m.type])}>
                       {m.type}
                     </span>
                     <b className="tabular-nums">{m.quantity > 0 ? `+${m.quantity}` : m.quantity}</b>

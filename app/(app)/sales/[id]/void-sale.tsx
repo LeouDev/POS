@@ -17,7 +17,7 @@ export function VoidSaleButton({ sale }: { sale: Target }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" className="btn" onClick={() => setOpen(true)}>
+      <button type="button" className="btn ios:!text-[var(--red)]" onClick={() => setOpen(true)}>
         <Ban aria-hidden size={16} className="text-brand" /> Void sale
       </button>
       <Dialog open={open} onClose={() => setOpen(false)} title={`Void ${sale.receiptNumber}`} width={420}>
@@ -55,7 +55,7 @@ function VoidForm({ sale, onDone }: { sale: Target; onDone: () => void }) {
         </p>
       </div>
       {formError && (
-        <p role="alert" className="border border-brand bg-[#fff0f0] p-2 text-[13px]">
+        <p role="alert" className="alert-box">
           {formError}
         </p>
       )}

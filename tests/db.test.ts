@@ -397,3 +397,13 @@ test("voiding a sale puts its items back, logs why, and drops it from reports", 
   assert.equal((await one(as(A, (q) => q(`select status from sales where id = $1`, [saleId])))).status, "voided");
   await assert.rejects(as(A, (q) => q(`update sales set status = 'completed' where id = $1`, [saleId])), /permission denied/);
 });
+
+test("each owner picks their own appearance", async () => {
+  const theme = async (user: string) => (await one(as(user, (q) => q(`select ui_theme from profiles`)))).ui_theme;
+  assert.equal(await theme(A), "classic");
+  await as(A, (q) => q(`update profiles set ui_theme = 'dark'`));
+  assert.equal(await theme(A), "dark");
+  assert.equal(await theme(B), "classic");
+  await assert.rejects(as(A, (q) => q(`update profiles set ui_theme = 'pink'`)), /check constraint/);
+  await as(A, (q) => q(`update profiles set ui_theme = 'classic'`));
+});

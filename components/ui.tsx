@@ -31,49 +31,17 @@ export function TitleBar({
   return (
     <div className="titlebar">
       {Icon && <Icon aria-hidden size={16} strokeWidth={2.25} className="flex-none" />}
-      <Heading id={id} className="min-w-0 flex-1 truncate text-[14px]">
+      <Heading id={id} className="min-w-0 flex-1 truncate text-[14px] ios:text-center ios:text-[17px]">
         {title}
       </Heading>
       {children ?? (
-        <div aria-hidden className="hidden gap-0.5 sm:flex">
+        <div aria-hidden className="hidden gap-0.5 sm:flex ios:!hidden">
           <span className="titlebar-button">_</span>
           <span className="titlebar-button">□</span>
           <span className="titlebar-button">×</span>
         </div>
       )}
     </div>
-  );
-}
-
-/** A page-level window: title bar, optional toolbar, scrolling body and status bar. */
-export function Window({
-  title,
-  icon,
-  toolbar,
-  status,
-  children,
-  className,
-  bodyClassName,
-}: {
-  title: ReactNode;
-  icon?: LucideIcon;
-  toolbar?: ReactNode;
-  status?: ReactNode;
-  children: ReactNode;
-  className?: string;
-  bodyClassName?: string;
-}) {
-  return (
-    <section className={cx("window flex min-h-0 flex-1 flex-col", className)}>
-      <TitleBar title={title} icon={icon} />
-      {toolbar && (
-        <div className="flex flex-wrap items-center gap-1.5 border-b border-shade px-1 py-1.5 shadow-[0_1px_#fff]">
-          {toolbar}
-        </div>
-      )}
-      <div className={cx("min-h-0 flex-1 overflow-auto p-2 sm:p-3", bodyClassName)}>{children}</div>
-      {status && <div className="statusbar">{status}</div>}
-    </section>
   );
 }
 
@@ -105,15 +73,19 @@ export function Skeleton({ className }: { className?: string }) {
 }
 
 const STOCK_STYLES = {
-  out: { label: "Out of stock", className: "bg-maroon text-white" },
-  low: { label: "Low stock", className: "bg-folder text-black" },
-  ok: { label: "In stock", className: "bg-ok text-white" },
+  out: { label: "Out of stock", className: "bg-maroon text-white ios:text-[var(--red)]" },
+  low: { label: "Low stock", className: "bg-folder text-black ios:text-[var(--orange)]" },
+  ok: { label: "In stock", className: "bg-ok text-white ios:text-[var(--green)]" },
 } as const;
+
+/** White/Black: a tinted pill in the text colour (pair with an ios:text-[…] colour). */
+export const IOS_PILL =
+  "ios:inline-flex ios:h-[22px] ios:items-center ios:rounded-full ios:border-0 ios:bg-[color-mix(in_srgb,currentColor_15%,transparent)] ios:px-2 ios:py-0 ios:font-semibold";
 
 export function StockBadge({ product }: { product: Pick<Product, "stock_quantity" | "low_stock_threshold"> }) {
   const s = STOCK_STYLES[stockStatus(product)];
   return (
-    <span className={cx("inline-block border border-black px-1.5 py-px text-[11px] font-bold whitespace-nowrap", s.className)}>
+    <span className={cx("inline-block border border-black px-1.5 py-px text-[11px] font-bold whitespace-nowrap", IOS_PILL, s.className)}>
       {s.label}
     </span>
   );
@@ -164,6 +136,32 @@ export function Lcd({ label, value, className }: { label: string; value: ReactNo
       <legend className="!font-normal">{label}</legend>
       <div className="lcd text-right text-[22px] sm:text-[34px] xl:text-[38px]">{value}</div>
     </fieldset>
+  );
+}
+
+const TONES = { good: "text-[var(--green)]", warn: "text-[var(--orange)]", bad: "text-[var(--red)]" };
+
+/** White/Black: a figure on a card (the original look uses Lcd). */
+export function Kpi({
+  label,
+  value,
+  tone,
+  className,
+  valueClassName = "text-[30px]",
+}: {
+  label: string;
+  value: ReactNode;
+  tone?: keyof typeof TONES;
+  className?: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className={cx("card min-w-0 px-5 py-4", className)}>
+      <p className="text-[13px] font-medium text-[var(--label2)]">{label}</p>
+      <p className={cx("mt-1 leading-[1.15] font-bold tracking-[-0.02em] tabular-nums [overflow-wrap:anywhere]", tone && TONES[tone], valueClassName)}>
+        {value}
+      </p>
+    </div>
   );
 }
 

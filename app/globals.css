@@ -26,6 +26,10 @@
   --font-lcd: var(--font-vt323), ui-monospace, monospace;
 }
 
+/* The White and Black appearances (Settings): iOS-style, set by data-theme on the app shell and <html>.
+   `ios:` utilities apply in either; the colours below make them light or dark. */
+@custom-variant ios (&:where([data-theme="light"] *, [data-theme="dark"] *));
+
 @layer base {
   html,
   body {
@@ -391,6 +395,13 @@
     outline: none;
   }
 
+  .alert-box {
+    padding: 8px;
+    background: #fff0f0;
+    border: 1px solid var(--color-brand);
+    font-size: 13px;
+  }
+
   /* Loading placeholders: stepped blink, like an old CRT redraw. */
   .skeleton {
     background: #a8a8a8;
@@ -461,6 +472,581 @@
     mask:
       linear-gradient(#000, #000) top / 100% calc(100% - 8px) no-repeat,
       radial-gradient(circle at 6px 8px, transparent 5px, #000 5.5px) bottom / 12px 8px repeat-x;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   White / Black (iOS 26 style). Same markup as the original: these rules restyle its classes.
+   Glass only on floating chrome; content sits on opaque cards.
+   --------------------------------------------------------------------------------------------- */
+@layer base {
+  [data-theme="light"] {
+    color-scheme: light;
+    --bg: #f2f2f7;
+    --card: #ffffff;
+    --label: #000000;
+    --label2: rgb(60 60 67 / 0.62);
+    --label3: rgb(60 60 67 / 0.32);
+    --sep: rgb(60 60 67 / 0.14);
+    --fill: rgb(120 120 128 / 0.1);
+    --sel: rgb(0 122 255 / 0.12);
+    --glass: rgb(255 255 255 / 0.66);
+    --gb: rgb(255 255 255 / 0.9);
+    --gs: 0 10px 34px rgb(0 0 0 / 0.09), 0 1px 2px rgb(0 0 0 / 0.05), inset 0 1px 0 rgb(255 255 255 / 0.9);
+    --tint: #007aff;
+    --green: #34c759;
+    --red: #ff3b30;
+    --orange: #ff9500;
+    --paper: #fffef9;
+    --sheet: #f2f2f7;
+    --sheet-card: #ffffff;
+  }
+  [data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #000000;
+    --card: #1c1c1e;
+    --label: #ffffff;
+    --label2: rgb(235 235 245 / 0.62);
+    --label3: rgb(235 235 245 / 0.3);
+    --sep: rgb(84 84 88 / 0.5);
+    --fill: rgb(120 120 128 / 0.22);
+    --sel: rgb(10 132 255 / 0.2);
+    --glass: rgb(44 44 48 / 0.58);
+    --gb: rgb(255 255 255 / 0.14);
+    --gs: 0 10px 34px rgb(0 0 0 / 0.5), inset 0 1px 0 rgb(255 255 255 / 0.12);
+    --tint: #0a84ff;
+    --green: #30d158;
+    --red: #ff453a;
+    --orange: #ff9f0a;
+    --paper: #f4f2ea;
+    /* Sheets are an elevated surface in dark mode, so they stand off the dimmed page. */
+    --sheet: #1c1c1e;
+    --sheet-card: #2c2c2e;
+  }
+  :is([data-theme="light"], [data-theme="dark"]) {
+    /* The Win98 palette mapped to system colours, so existing utilities read right in both. */
+    --color-desktop: var(--bg);
+    --color-navy: var(--tint);
+    --color-sky: var(--tint);
+    --color-brand: var(--red);
+    --color-maroon: var(--red);
+    --color-ok: var(--green);
+    --color-folder: var(--orange);
+    --color-face: var(--fill);
+    --color-face-light: var(--sep);
+    --color-shade: var(--sep);
+    --color-tip: var(--card);
+    --color-paper: var(--paper);
+    --color-black: var(--label);
+    --color-neutral-500: var(--label2);
+    --color-neutral-600: var(--label2);
+    --color-neutral-700: var(--label2);
+    --font-sans: -apple-system, BlinkMacSystemFont, system-ui, "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+    background: var(--bg);
+    color: var(--label);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.35;
+    -webkit-font-smoothing: antialiased;
+
+    & body {
+      background: var(--bg);
+      color: var(--label);
+    }
+    & ::selection {
+      background: color-mix(in srgb, var(--tint) 30%, transparent);
+      color: inherit;
+    }
+    & a {
+      color: var(--tint);
+      text-decoration: none;
+    }
+    /* Thin overlay-style scrollbars instead of the bevelled ones. */
+    &::-webkit-scrollbar,
+    & ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+      background: transparent;
+    }
+    &::-webkit-scrollbar-thumb,
+    & ::-webkit-scrollbar-thumb {
+      background: var(--label3);
+      background-clip: padding-box;
+      border: 2px solid transparent;
+      border-radius: 999px;
+      box-shadow: none;
+    }
+    &::-webkit-scrollbar-corner,
+    & ::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+  }
+}
+
+@layer components {
+  :where([data-theme="light"], [data-theme="dark"]) {
+    /* Surfaces */
+    .window {
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      padding: 0;
+    }
+    .window-shadow {
+      background: var(--card);
+      border-radius: 22px;
+      box-shadow: 0 16px 48px rgb(0 0 0 / 0.2);
+    }
+    .titlebar {
+      min-height: 0;
+      padding: 0;
+      gap: 8px;
+      background: none;
+      color: var(--label);
+      font-weight: 600;
+    }
+    .titlebar-button {
+      width: 40px;
+      height: 40px;
+      background: var(--glass);
+      color: var(--label);
+      border: 0.5px solid var(--gb);
+      border-radius: 999px;
+      box-shadow: var(--gs);
+      font-size: 22px;
+      font-weight: 400;
+    }
+    .raised,
+    .sunken,
+    .etched,
+    .groupbox {
+      border: 0;
+      box-shadow: none;
+    }
+    .raised {
+      border-radius: 16px;
+    }
+    .sunken {
+      background: var(--card);
+      border-radius: 22px;
+    }
+    .groupbox .sunken {
+      background: transparent;
+      border-radius: 0;
+    }
+    .sunken:has(> .listview) {
+      padding: 4px 8px 6px;
+    }
+    .groupbox {
+      padding: 18px 20px;
+      background: var(--card);
+      border-radius: 22px;
+    }
+    /* A floated legend lays out inside the card like a heading (and as a full-width item in grids). */
+    .groupbox > legend {
+      float: left;
+      grid-column: 1 / -1;
+      width: 100%;
+      margin-bottom: 12px;
+      padding: 0;
+      font-size: 17px;
+      font-weight: 600;
+    }
+    .groupbox > legend + * {
+      clear: both;
+    }
+
+    /* Segmented controls: a .segmented track holding .tab items. */
+    .segmented {
+      display: flex;
+      gap: 0;
+      padding: 3px;
+      background: var(--fill);
+      border-radius: 999px;
+    }
+    .tab {
+      min-height: 34px;
+      margin: 0;
+      padding: 0 16px;
+      background: transparent;
+      color: var(--label);
+      border: 0;
+      border-radius: 999px;
+      box-shadow: none;
+      font-size: 14px;
+      font-weight: 500;
+      justify-content: center;
+    }
+    .tab[aria-pressed="true"],
+    .tab[aria-current="page"] {
+      margin-top: 0;
+      padding-bottom: 0;
+      background: var(--card);
+      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+      font-weight: 600;
+    }
+    .tab:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--tint) 40%, transparent);
+      outline-offset: 0;
+    }
+    .segmented > .btn {
+      min-height: 34px;
+      background: transparent;
+      color: var(--label);
+      font-weight: 500;
+    }
+    .segmented > .btn[aria-pressed="true"] {
+      background: var(--card);
+      color: var(--label);
+      box-shadow: 0 2px 6px rgb(0 0 0 / 0.12);
+      font-weight: 600;
+    }
+
+    /* Buttons: capsules. */
+    .btn {
+      min-height: 40px;
+      padding: 0 16px;
+      gap: 8px;
+      background: var(--fill);
+      color: var(--label);
+      border: 0;
+      border-radius: 999px;
+      box-shadow: none;
+      font-size: 15px;
+      font-weight: 600;
+      transition: opacity 0.15s;
+    }
+    .btn:active:not(:disabled),
+    .btn[aria-expanded="true"] {
+      border-color: transparent;
+      box-shadow: none;
+      opacity: 0.7;
+    }
+    .btn:active:not(:disabled) > * {
+      transform: none;
+    }
+    .btn[aria-pressed="true"],
+    .btn[aria-current="page"] {
+      background: var(--sel);
+      background-image: none;
+      color: var(--tint);
+      border: 0;
+      box-shadow: none;
+      font-weight: 600;
+    }
+    .btn:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--tint) 40%, transparent);
+      outline-offset: 1px;
+    }
+    .btn:focus-visible::after {
+      content: none;
+    }
+    .btn:disabled,
+    .btn[aria-disabled="true"] {
+      color: var(--label3);
+      text-shadow: none;
+    }
+    .btn-default {
+      background: var(--tint);
+      color: #fff;
+      outline: 0;
+    }
+    .btn-default:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--tint) 40%, transparent);
+    }
+    .btn-default:disabled,
+    .btn-default[aria-disabled="true"] {
+      background: var(--fill);
+      color: var(--label3);
+    }
+    .btn-lg {
+      min-height: 48px;
+      padding: 0 20px;
+      font-size: 17px;
+      font-weight: 600;
+    }
+    .btn-xl {
+      min-height: 56px;
+      border-width: 0;
+      box-shadow: none;
+      font-size: 17px;
+      font-weight: 600;
+    }
+    .btn-xl:active:not(:disabled) {
+      box-shadow: none;
+    }
+    .btn-sm {
+      min-height: 34px;
+      padding: 0 14px;
+      font-size: 14px;
+    }
+    .btn-icon {
+      min-width: 40px;
+      padding: 0;
+    }
+    .btn-danger {
+      color: var(--red);
+    }
+    .btn-default.btn-danger {
+      background: var(--red);
+      color: #fff;
+    }
+
+    /* Inputs */
+    .field {
+      min-height: 40px;
+      padding: 0 14px;
+      background: var(--fill);
+      color: var(--label);
+      border: 0;
+      border-radius: 12px;
+      box-shadow: none;
+    }
+    .field::placeholder {
+      color: var(--label2);
+    }
+    .field:focus-visible {
+      outline: 0;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--tint) 30%, transparent);
+    }
+    .field:disabled,
+    .field[readonly] {
+      background: var(--fill);
+      color: var(--label2);
+    }
+    .field[aria-invalid="true"] {
+      box-shadow: 0 0 0 2px var(--red);
+    }
+    select.field {
+      padding-right: 34px;
+      background: var(--fill)
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 15 5 5 5-5'/%3E%3Cpath d='m7 9 5-5 5 5'/%3E%3C/svg%3E")
+        no-repeat right 12px center / 14px;
+    }
+    input[type="search"].field {
+      padding-left: 38px;
+      background: var(--fill)
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E")
+        no-repeat 14px center / 16px;
+      border-radius: 999px;
+    }
+    input[type="file"].field {
+      padding: 8px 14px;
+    }
+    .check {
+      width: 22px;
+      height: 22px;
+      background: var(--fill);
+      border: 0;
+      border-radius: 7px;
+      box-shadow: inset 0 0 0 1.5px var(--label3);
+    }
+    .check:checked {
+      background: var(--tint)
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")
+        center / 15px no-repeat;
+      box-shadow: none;
+    }
+    .check:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--tint) 40%, transparent);
+      outline-offset: 1px;
+    }
+
+    /* Readouts and data */
+    .lcd {
+      padding: 0;
+      background: none;
+      color: var(--label);
+      border: 0;
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+    .listview {
+      font-size: 15px;
+    }
+    .listview th {
+      padding: 10px 12px;
+      background: var(--card);
+      color: var(--label2);
+      border: 0;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .listview td {
+      padding: 10px 12px;
+      border-top: 0.5px solid var(--sep);
+    }
+    .listview tbody tr:nth-child(even) td {
+      background: transparent;
+    }
+    .listview tr[data-href]:hover td,
+    .listview tr[data-href]:focus-within td {
+      background: var(--fill);
+      color: inherit;
+    }
+    .listview tr[data-href]:hover a,
+    .listview tr[data-href]:focus-within a {
+      color: inherit;
+    }
+    .listview tr[data-href]:hover td,
+    .listview tr[data-href]:hover + tr td {
+      border-top-color: transparent;
+    }
+    .listview tr:is([data-href], [aria-selected="true"]) td:first-child {
+      border-radius: 12px 0 0 12px;
+    }
+    .listview tr:is([data-href], [aria-selected="true"]) td:last-child {
+      border-radius: 0 12px 12px 0;
+    }
+    .statusbar {
+      gap: 12px;
+      padding: 10px 2px 0;
+      color: var(--label2);
+      font-size: 13px;
+    }
+    .statusbar > * {
+      padding: 0;
+      border: 0;
+    }
+
+    .alert-box {
+      padding: 10px 12px;
+      background: color-mix(in srgb, var(--red) 12%, transparent);
+      border: 0;
+      border-radius: 12px;
+      color: var(--label);
+    }
+
+    .skeleton {
+      background: var(--fill);
+      border-radius: 14px;
+      animation: skeleton-pulse 1.2s ease-in-out infinite;
+    }
+    .progress-marquee {
+      height: 6px;
+      padding: 0;
+      background: var(--fill);
+      border: 0;
+      border-radius: 999px;
+      box-shadow: none;
+    }
+    .progress-marquee > span {
+      background: var(--tint);
+      border-radius: 999px;
+      animation: marquee 1.4s ease-in-out infinite;
+    }
+
+    /* Dialogs become sheets: centred on larger screens, from the bottom on phones. */
+    dialog.win-dialog::backdrop {
+      background: rgb(0 0 0 / 0.35);
+    }
+    .win-dialog > .window {
+      background: var(--sheet);
+      border-radius: 32px;
+      box-shadow: 0 24px 80px rgb(0 0 0 / 0.3);
+      overflow: hidden;
+    }
+    .win-dialog .titlebar {
+      position: relative;
+      justify-content: center;
+      min-height: 64px;
+      padding: 12px 64px;
+    }
+    .win-dialog .titlebar .titlebar-button {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+    }
+
+    /* Receipt paper keeps its printed look in both. */
+    .receipt-paper {
+      --color-black: #111;
+      color: #111;
+      box-shadow: 0 10px 30px rgb(0 0 0 / 0.15);
+    }
+
+    .win-dialog :is(.card, .sunken) {
+      background: var(--sheet-card);
+    }
+
+    /* A glass capsule holding plain buttons (a page's secondary actions). */
+    .glass-group {
+      display: flex;
+      flex-wrap: wrap;
+      padding: 4px;
+      border-radius: 999px;
+    }
+    .glass-group > .btn {
+      min-height: 36px;
+      padding: 0 14px;
+      background: transparent;
+    }
+
+    /* Last, so they win over .btn: floating glass chrome and opaque content cards. */
+    .glass {
+      background: var(--glass);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      backdrop-filter: blur(24px) saturate(180%);
+      border: 0.5px solid var(--gb);
+      box-shadow: var(--gs);
+    }
+    .card {
+      background: var(--card);
+      border-radius: 22px;
+    }
+  }
+
+  @media (min-width: 768px) {
+    :where([data-theme="light"], [data-theme="dark"]) .field {
+      font-size: 15px;
+    }
+  }
+  /* A list row whose detail shows beside the list (Sales on wide screens). Its text turns white,
+     overriding colour utilities inside it. */
+  @media (min-width: 1024px) {
+    :where([data-theme="light"], [data-theme="dark"]) .listview tbody tr[aria-selected="true"] td {
+      background: var(--tint);
+    }
+    :where([data-theme="light"], [data-theme="dark"]) .listview tr[aria-selected="true"] td,
+    :where([data-theme="light"], [data-theme="dark"]) .listview tr[aria-selected="true"] + tr td {
+      border-top-color: transparent;
+    }
+    :where([data-theme="light"], [data-theme="dark"]) .listview tbody tr[aria-selected="true"] :is(td, td *) {
+      color: #fff !important;
+    }
+  }
+  @media (max-width: 767px) {
+    :where([data-theme="light"], [data-theme="dark"]) {
+      dialog.win-dialog {
+        width: calc(100vw - 16px) !important;
+        max-width: none;
+        max-height: calc(100dvh - 56px);
+        margin: auto 8px 8px;
+      }
+      .win-dialog > .window {
+        max-height: calc(100dvh - 56px);
+        border-radius: 40px;
+      }
+      .win-dialog > .window::before {
+        content: "";
+        flex: none;
+        width: 40px;
+        height: 5px;
+        margin: 10px auto 0;
+        background: var(--label3);
+        border-radius: 3px;
+      }
+    }
+  }
+}
+
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.5;
   }
 }
 

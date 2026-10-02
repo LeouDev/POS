@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { Printable } from "@/components/printable";
 import { Receipt } from "@/components/receipt";
-import { Window } from "@/components/ui";
+import { Window } from "@/components/window";
 import { describeError } from "@/lib/actions";
 import { getProfile, getSession } from "@/lib/data";
 import { formatDateTime, formatMoney, paymentLabel } from "@/lib/format";
@@ -43,14 +43,14 @@ export default async function ReceiptPage(props: PageProps<"/sales/[id]">) {
       icon={ReceiptText}
       toolbar={
         <>
-          <Link href="/sales" className="btn">
+          <Link href="/sales" className="btn glass">
             <ArrowLeft aria-hidden size={16} /> All sales
           </Link>
           <PrintButton />
           {!voided && <VoidSaleButton sale={{ id: sale.id, receiptNumber: sale.receipt_number, units }} />}
           <div className="flex-1" />
-          <Link href="/sale" className="btn">
-            <ShoppingCart aria-hidden size={16} className="text-ok" /> New sale
+          <Link href="/sale" className="btn ios:!bg-[var(--tint)] ios:!text-white">
+            <ShoppingCart aria-hidden size={16} className="text-ok ios:text-current" /> New sale
           </Link>
         </>
       }
@@ -62,7 +62,7 @@ export default async function ReceiptPage(props: PageProps<"/sales/[id]">) {
       }
     >
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="sunken flex justify-center !bg-[#7a7a7a] px-2 py-5">
+        <div className="sunken flex justify-center !bg-[#7a7a7a] px-2 py-5 ios:!bg-[var(--fill)]">
           <Printable>
             <Receipt
               sale={sale}
@@ -74,7 +74,7 @@ export default async function ReceiptPage(props: PageProps<"/sales/[id]">) {
         </div>
         <div className="flex flex-col gap-3">
           {voided && (
-            <p role="status" className="border border-brand bg-[#fff0f0] p-2 text-[13px]">
+            <p role="status" className="alert-box">
               <b>Voided</b>
               {sale.voided_at && ` ${formatDateTime(sale.voided_at, profile.timezone)}`}
               {sale.void_reason && `: ${sale.void_reason}`}. Its items went back into stock, and it doesn&apos;t count

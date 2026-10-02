@@ -13,6 +13,8 @@ type DialogProps = {
   footer?: ReactNode;
   width?: number;
   dismissible?: boolean;
+  /** White/Black: a round button at the sheet's top right (the close button is at the left). */
+  action?: ReactNode;
 };
 
 /**
@@ -24,7 +26,7 @@ export function Dialog({ open, ...props }: DialogProps) {
   return open ? createPortal(<OpenDialog {...props} />, document.body) : null;
 }
 
-function OpenDialog({ onClose, title, children, footer, width = 480, dismissible = true }: Omit<DialogProps, "open">) {
+function OpenDialog({ onClose, title, children, footer, width = 480, dismissible = true, action }: Omit<DialogProps, "open">) {
   const ref = useRef<HTMLDialogElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const titleId = useId();
@@ -66,9 +68,10 @@ function OpenDialog({ onClose, title, children, footer, width = 480, dismissible
           <button type="button" className="titlebar-button" aria-label="Close" disabled={!dismissible} onClick={onClose}>
             ×
           </button>
+          {action && <div className="absolute top-3 right-3.5">{action}</div>}
         </TitleBar>
-        <div className="dialog-body min-h-0 overflow-auto p-3">{children}</div>
-        {footer && <div className="flex flex-wrap justify-end gap-2 px-3 pb-3">{footer}</div>}
+        <div className="dialog-body min-h-0 overflow-auto p-3 ios:px-5 ios:pt-1 ios:pb-6">{children}</div>
+        {footer && <div className="flex flex-wrap justify-end gap-2 px-3 pb-3 ios:px-5 ios:pb-6">{footer}</div>}
       </div>
     </dialog>
   );

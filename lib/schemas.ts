@@ -62,6 +62,7 @@ export const settingsSchema = z.object({
     .max(100, "Can't be more than 100%")
     .refine(twoDecimals, "Use at most 2 decimal places"),
   timezone: z.string().refine(isValidTimezone, "Choose a timezone"),
+  uiTheme: z.enum(["classic", "light", "dark"]),
 });
 export type SettingsInput = z.infer<typeof settingsSchema>;
 
