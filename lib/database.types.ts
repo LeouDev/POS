@@ -199,6 +199,10 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: AdminAccount[];
       };
+      admin_revenue: {
+        Args: Record<PropertyKey, never>;
+        Returns: { revenue: number; payments: number; paying_accounts: number }[];
+      };
       has_access: {
         Args: Record<PropertyKey, never>;
         Returns: boolean;

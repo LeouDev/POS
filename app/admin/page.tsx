@@ -6,7 +6,7 @@ import { cx, Lcd, TitleBar } from "@/components/ui";
 import { describeError } from "@/lib/actions";
 import type { AdminAccount } from "@/lib/database.types";
 import { getProfile, getSession } from "@/lib/data";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatMoney } from "@/lib/format";
 import { accessEndsAt, isPro, PLANS, trialDaysLeft } from "@/lib/trial";
 
 export const metadata: Metadata = { title: "Admin", robots: { index: false, follow: false } };
@@ -50,43 +50,60 @@ function overview(accounts: AdminAccount[], now = Date.now()) {
 export default async function AdminPage() {
   const [{ supabase }, profile] = await Promise.all([getSession(), getProfile()]);
   if (!profile.is_admin) notFound();
-  const { data: accounts, error } = await supabase.rpc("admin_accounts");
-  if (error) throw new Error(describeError(error));
+  const [{ data: accounts, error }, { data: income, error: incomeError }] = await Promise.all([
+    supabase.rpc("admin_accounts"),
+    supabase.rpc("admin_revenue").single(),
+  ]);
+  if (error || incomeError) throw new Error(describeError(error ?? incomeError));
 
   const tz = profile.timezone;
   const date = (iso: string) => formatDateTime(iso, tz, "date");
   const { rows, setUp, trial, pro, ended, unconfirmed, notOpened, sold7, sold30, soldEver, stocked } = overview(accounts);
-  const share = (n: number) => (setUp ? ` · ${Math.round((n / setUp) * 100)}%` : "");
+  const percent = (n: number) => (rows.length ? Math.round((n / rows.length) * 100) : 0);
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
   return (
     <main className="flex min-h-dvh justify-center px-2 py-6 sm:px-4">
       <section className="window window-shadow flex w-full max-w-6xl flex-col self-start">
         <TitleBar title="KASSIX admin" icon={ShieldCheck} />
         <div className="flex flex-col gap-4 p-3 sm:p-4">
-          <section aria-label="Accounts" className="flex flex-col gap-2">
-            <h2 className="font-bold">Accounts</h2>
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-              <Lcd label="Registered" value={rows.length} />
+          <section aria-label="Overview" className="flex flex-col gap-2">
+            <div className="grid gap-2 sm:grid-cols-3">
+              <Lcd label="Registered accounts" value={rows.length} />
+              <Lcd label="Utilization" value={`${percent(sold7)}%`} />
+              <Lcd label="Total revenue" value={formatMoney(income.revenue, "PHP")} />
+            </div>
+            <p className="text-[12px] text-neutral-600">
+              Utilization: {sold7} of {plural(rows.length, "registered account")} made a sale in the last 7 days. Revenue:
+              KASSIX Pro payments received ({plural(income.payments, "payment")} from{" "}
+              {plural(income.paying_accounts, "paying account")}), before PayMongo fees and refunds; your own admin
+              account&apos;s payments don&apos;t count.
+            </p>
+          </section>
+
+          <section aria-label="Plans" className="flex flex-col gap-2">
+            <h2 className="font-bold">Plans</h2>
+            <div className="grid grid-cols-3 gap-2">
               <Lcd label="Free trial" value={trial} />
               <Lcd label="KASSIX Pro" value={pro} />
               <Lcd label="Ended (locked)" value={ended} />
             </div>
             <p className="text-[12px] text-neutral-600">
               {unconfirmed} haven&apos;t confirmed their email yet; {notOpened} confirmed but haven&apos;t opened KASSIX
-              (no business set up).
+              ({setUp} of {rows.length} have set up a business).
             </p>
           </section>
 
           <section aria-label="Usage" className="flex flex-col gap-2">
             <h2 className="font-bold">Usage</h2>
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-              <Lcd label={`Sold in the last 7 days${share(sold7)}`} value={sold7} />
-              <Lcd label={`Sold in the last 30 days${share(sold30)}`} value={sold30} />
-              <Lcd label={`Made a sale${share(soldEver)}`} value={soldEver} />
-              <Lcd label={`Added products${share(stocked)}`} value={stocked} />
+              <Lcd label={`Sold in the last 7 days · ${percent(sold7)}%`} value={sold7} />
+              <Lcd label={`Sold in the last 30 days · ${percent(sold30)}%`} value={sold30} />
+              <Lcd label={`Made a sale · ${percent(soldEver)}%`} value={soldEver} />
+              <Lcd label={`Added products · ${percent(stocked)}%`} value={stocked} />
             </div>
             <p className="text-[12px] text-neutral-600">
-              Percentages are of the {setUp} businesses set up. Voided sales don&apos;t count.
+              Percentages are of all {plural(rows.length, "registered account")}. Voided sales don&apos;t count.
             </p>
           </section>
 

@@ -448,4 +448,9 @@ test("only admins see every account, and owners can't make themselves admin", as
   assert.equal(row(A).last_plan, "yearly"); // the payment recorded earlier
   assert.equal(row(B).last_plan, null);
   await assert.rejects(as(B, (q) => q(`select * from admin_accounts()`)), /Not allowed/);
+
+  // Revenue counts customers' payments (D's ₱149) but not the admin's own (A's ₱1,490 test).
+  const revenue = await one(as(A, (q) => q(`select revenue::float, payments::int, paying_accounts::int from admin_revenue()`)));
+  assert.deepEqual(revenue, { revenue: 149, payments: 1, paying_accounts: 1 });
+  await assert.rejects(as(B, (q) => q(`select * from admin_revenue()`)), /Not allowed/);
 });

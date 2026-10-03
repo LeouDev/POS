@@ -124,7 +124,9 @@ in `profiles.ui_theme`. Signing in, the public site and billing always use the o
 
 ## Admin overview
 
-`/admin` shows every account for the KASSIX operator: how many registered, confirmed their email and set up a
+`/admin` shows every account for the KASSIX operator: utilization (the share of registered accounts that made a sale
+in the last 7 days), total revenue (KASSIX Pro payments received, before PayMongo fees and refunds, leaving out
+admin accounts' own test payments; `admin_revenue()`), how many registered, confirmed their email and set up a
 business; who is on the free trial (and how many days are left), on KASSIX Pro (monthly or yearly, paid until) or
 locked; and usage counts per business (products, sales in the last 7 and 30 days, last sale). It never shows the
 records themselves. Only profiles with `is_admin` get in (others see a 404), and `admin_accounts()` checks the same in
