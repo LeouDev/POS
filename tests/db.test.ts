@@ -14,7 +14,14 @@ const B = "00000000-0000-4000-8000-00000000000b";
 // cloud default privileges, so the migration's explicit revokes are exercised.
 const SUPABASE_STUB = `
   create schema auth;
-  create table auth.users (id uuid primary key, email text);
+  create table auth.users (
+    id uuid primary key,
+    email text,
+    created_at timestamptz not null default now(),
+    email_confirmed_at timestamptz,
+    last_sign_in_at timestamptz,
+    raw_user_meta_data jsonb not null default '{}'
+  );
   create function auth.uid() returns uuid language sql stable as $$
     select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid
   $$;
@@ -406,4 +413,39 @@ test("each owner picks their own appearance", async () => {
   assert.equal(await theme(B), "classic");
   await assert.rejects(as(A, (q) => q(`update profiles set ui_theme = 'pink'`)), /check constraint/);
   await as(A, (q) => q(`update profiles set ui_theme = 'classic'`));
+});
+
+test("only admins see every account, and owners can't make themselves admin", async () => {
+  await assert.rejects(as(A, (q) => q(`select * from admin_accounts()`)), /Not allowed/);
+  await assert.rejects(as(null, (q) => q(`select * from admin_accounts()`)), /permission denied/);
+  await assert.rejects(as(A, (q) => q(`update profiles set is_admin = true`)), /permission denied/);
+
+  // Someone who signed up but never opened KASSIX: no profile yet, so the sign-up details show.
+  const E = "00000000-0000-4000-8000-00000000000e";
+  await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ($1, 'e@test.local', $2)`, [
+    E,
+    JSON.stringify({ business_name: "E Store", owner_name: "Eve" }),
+  ]);
+  await db.query(`update profiles set is_admin = true where user_id = $1`, [A]);
+  const rows = await as(A, (q) => q(`select * from admin_accounts()`));
+  const row = (id: string) => rows.find((r) => r.user_id === id)!;
+  assert.equal(rows.length, Number((await db.query<Row>(`select count(*)::int as n from auth.users`)).rows[0].n));
+  assert.equal(rows[0].user_id, E); // newest first
+  assert.deepEqual([row(E).business_name, row(E).owner_name, row(E).trial_ends_at, Number(row(E).sales)], ["E Store", "Eve", null, 0]);
+
+  const counts = (await db.query<Row>(
+    `select (select count(*) from sales where user_id = $1 and status = 'completed')::int as sales,
+            (select count(*) from products where user_id = $1)::int as products`,
+    [A],
+  )).rows[0];
+  assert.deepEqual([row(A).email, row(A).business_name, Number(row(A).sales), Number(row(A).products)], [
+    "a@test.local",
+    "A Store",
+    counts.sales,
+    counts.products,
+  ]);
+  assert.ok(row(A).last_sale_at);
+  assert.equal(row(A).last_plan, "yearly"); // the payment recorded earlier
+  assert.equal(row(B).last_plan, null);
+  await assert.rejects(as(B, (q) => q(`select * from admin_accounts()`)), /Not allowed/);
 });

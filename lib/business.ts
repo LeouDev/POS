@@ -9,7 +9,7 @@ export const BUSINESS = {
 };
 
 /** When the Terms, Privacy Policy and Refund Policy last changed. */
-export const POLICIES_UPDATED = "September 30, 2026";
+export const POLICIES_UPDATED = "October 3, 2026";
 
 export const HOW_TO_VIDEO_ID = "I3XOQMoq2ag";
 export const HOW_TO_VIDEO_URL = `https://www.youtube.com/watch?v=${HOW_TO_VIDEO_ID}`;

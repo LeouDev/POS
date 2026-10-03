@@ -20,6 +20,7 @@ type ProfileRow = {
   trial_ends_at: string;
   paid_until: string | null;
   ui_theme: UiTheme;
+  is_admin: boolean;
   created_at: string;
 };
 
@@ -194,6 +195,10 @@ export type Database = {
         Args: { p_period: string };
         Returns: Json;
       };
+      admin_accounts: {
+        Args: Record<PropertyKey, never>;
+        Returns: AdminAccount[];
+      };
       has_access: {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
@@ -227,6 +232,26 @@ export type SaleWithItems = Sale & { sale_items: SaleItem[] };
 export type ProductWithCategory = Product & { categories: { name: string } | null };
 
 export type ReportPeriod = "today" | "7d" | "week" | "month";
+
+/** A row of public.admin_accounts(): one registered account, for the /admin overview. */
+export type AdminAccount = {
+  user_id: string;
+  email: string;
+  signed_up_at: string;
+  confirmed_at: string | null;
+  last_sign_in_at: string | null;
+  business_name: string | null;
+  owner_name: string | null;
+  profile_created_at: string | null;
+  trial_ends_at: string | null;
+  paid_until: string | null;
+  last_plan: "monthly" | "yearly" | null;
+  products: number;
+  sales: number;
+  sales_7d: number;
+  sales_30d: number;
+  last_sale_at: string | null;
+};
 
 /** Shape of the jsonb returned by public.sales_report(). */
 export type SalesReport = {

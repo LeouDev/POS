@@ -122,6 +122,19 @@ in `profiles.ui_theme`. Signing in, the public site and billing always use the o
   branch on the theme (`Window` and server pages read it from the profile, client components from
   `useIos()`).
 
+## Admin overview
+
+`/admin` shows every account for the KASSIX operator: how many registered, confirmed their email and set up a
+business; who is on the free trial (and how many days are left), on KASSIX Pro (monthly or yearly, paid until) or
+locked; and usage counts per business (products, sales in the last 7 and 30 days, last sale). It never shows the
+records themselves. Only profiles with `is_admin` get in (others see a 404), and `admin_accounts()` checks the same in
+the database. Owners can't set the flag; make an account an admin in the SQL editor:
+
+```sql
+update public.profiles set is_admin = true
+where user_id = (select id from auth.users where email = 'you@example.com');
+```
+
 ## How the data stays correct
 
 - Every table has Row Level Security; each user only sees and changes their own rows.

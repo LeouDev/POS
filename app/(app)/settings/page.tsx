@@ -1,4 +1,4 @@
-import { CalendarClock, ChevronRight, Crown, LogOut, Settings } from "lucide-react";
+import { CalendarClock, ChevronRight, Crown, LogOut, Settings, ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { signOut } from "@/app/login/actions";
@@ -39,6 +39,16 @@ export default async function SettingsPage() {
             </span>
           </Link>
           <SettingsForm profile={profile} timezones={timezones} />
+          {profile.is_admin && (
+            <Link
+              href="/admin"
+              className="card mb-[22px] flex h-[50px] items-center gap-3 rounded-[26px] px-[18px] text-[17px] !text-[var(--label)] no-underline"
+            >
+              <ShieldCheck aria-hidden size={20} className="text-[var(--tint)]" />
+              <span className="flex-1">Admin overview</span>
+              <ChevronRight aria-hidden size={16} className="text-[var(--label3)]" />
+            </Link>
+          )}
           <form action={signOut}>
             <button type="submit" className="card h-[50px] w-full rounded-[26px] text-[17px] text-[var(--red)]">
               Log off
@@ -83,11 +93,18 @@ export default async function SettingsPage() {
           <p className="text-[13px]">
             Signed in as <b>{email}</b>. Everything you record in KASSIX is private to this account.
           </p>
-          <form action={signOut}>
-            <button type="submit" className="btn">
-              <LogOut aria-hidden size={16} /> Log off
-            </button>
-          </form>
+          <div className="flex flex-wrap gap-2">
+            <form action={signOut}>
+              <button type="submit" className="btn">
+                <LogOut aria-hidden size={16} /> Log off
+              </button>
+            </form>
+            {profile.is_admin && (
+              <Link href="/admin" className="btn">
+                <ShieldCheck aria-hidden size={16} /> Admin overview
+              </Link>
+            )}
+          </div>
         </fieldset>
       </div>
     </Window>

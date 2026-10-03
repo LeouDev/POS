@@ -40,6 +40,10 @@ export default function PrivacyPage() {
         <li>To record your payments and how long your plan lasts.</li>
         <li>To send service emails, such as your welcome email and messages about your account.</li>
         <li>To answer your questions and fix problems.</li>
+        <li>
+          To see how KASSIX is used, for example how many accounts sign up and how many make sales, so we can improve
+          it.
+        </li>
         <li>To meet our legal obligations.</li>
       </ul>
       <p>We do not sell your information, and we do not use it for advertising.</p>
@@ -76,7 +80,8 @@ export default function PrivacyPage() {
       <h2>How we protect it</h2>
       <p>
         All connections to KASSIX are encrypted. Each business&apos;s records are kept separate by access rules in our
-        database, so no other account can see them.
+        database, so no other account can see them. Our team can see your account details, your plan and usage totals
+        (such as how many products and sales your account has) to run KASSIX and help you.
       </p>
 
       <h2>Your rights</h2>
