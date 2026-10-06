@@ -1,5 +1,5 @@
 import { Database, LogOut } from "lucide-react";
-import type { Viewport } from "next";
+import type { Metadata, Viewport } from "next";
 import { redirect, unstable_rethrow } from "next/navigation";
 import type { ReactNode } from "react";
 import { signOut } from "@/app/login/actions";
@@ -10,13 +10,23 @@ import { getProfile, getSession } from "@/lib/data";
 import { THEMES } from "@/lib/format";
 import { accessEndsAt, hasAccess, isPro } from "@/lib/trial";
 
+const theme = async () =>
+  (
+    await getProfile().catch((err: unknown) => {
+      unstable_rethrow(err);
+      return null;
+    })
+  )?.ui_theme;
+
 // The browser and home-screen app bar match the owner's appearance.
 export async function generateViewport(): Promise<Viewport> {
-  const profile = await getProfile().catch((err: unknown) => {
-    unstable_rethrow(err);
-    return null;
-  });
-  return { themeColor: THEMES.find((t) => t.value === profile?.ui_theme)?.color ?? THEMES[0].color };
+  const ui = await theme();
+  return { themeColor: THEMES.find((t) => t.value === ui)?.color ?? THEMES[0].color };
+}
+
+// iPhone home-screen app: a black status bar over the Black look instead of a white strip.
+export async function generateMetadata(): Promise<Metadata> {
+  return { appleWebApp: { title: "KASSIX", statusBarStyle: (await theme()) === "dark" ? "black" : "default" } };
 }
 
 export default async function AppLayout({ children }: { children: ReactNode }) {

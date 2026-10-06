@@ -18,5 +18,11 @@ export default function manifest(): MetadataRoute.Manifest {
       // Padded on teal so Android's round or squircle masks don't clip the window.
       { src: "/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
+    // Android: long-press the home-screen icon to jump straight to these.
+    shortcuts: [
+      { name: "New sale", url: "/sale", icons: [{ src: "/icon.png", sizes: "192x192", type: "image/png" }] },
+      { name: "Sales", url: "/sales", icons: [{ src: "/icon.png", sizes: "192x192", type: "image/png" }] },
+      { name: "Products", url: "/products", icons: [{ src: "/icon.png", sizes: "192x192", type: "image/png" }] },
+    ],
   };
 }

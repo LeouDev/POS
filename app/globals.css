@@ -1050,6 +1050,21 @@
   }
 }
 
+/* Home-screen app feel wherever the viewport locks zoom (the app screens; the public site keeps browser
+   defaults): no double-tap zoom, no whole-page bounce or pull-to-refresh, no long-press link previews.
+   Scrolling inside pages, taps, typing and text selection are unchanged. */
+:root:has(meta[name="viewport"][content*="user-scalable=no"]) {
+  touch-action: manipulation;
+  overscroll-behavior: none;
+
+  & body {
+    overscroll-behavior: none;
+  }
+  & :is(a, button, img) {
+    -webkit-touch-callout: none;
+  }
+}
+
 /* Bigger hit targets on touch screens. */
 @media (pointer: coarse) {
   .btn {
