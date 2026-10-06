@@ -30,6 +30,15 @@
    `ios:` utilities apply in either; the colours below make them light or dark. */
 @custom-variant ios (&:where([data-theme="light"] *, [data-theme="dark"] *));
 
+/* Opened from the Home Screen of an iPhone or iPad (-webkit-touch-callout exists only on iOS). */
+@custom-variant home-app {
+  @media screen and (display-mode: standalone) {
+    @supports (-webkit-touch-callout: none) {
+      @slot;
+    }
+  }
+}
+
 @layer base {
   html,
   body {
@@ -40,6 +49,9 @@
     color: #000;
     font-size: 14px;
     line-height: 1.4;
+    /* The app screens are edge to edge (viewport-fit=cover): keep clear of a landscape iPhone's notch. */
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
   ::selection {
     background: var(--color-navy);
@@ -1063,6 +1075,28 @@
   & :is(a, button, img) {
     -webkit-touch-callout: none;
   }
+}
+
+/* iOS 26 blurs the top of a Home Screen app under the status bar unless a solid fixed bar sits at the top
+   edge (it then extends that bar's colour instead), so the app screens get a thin one in the page colour.
+   The shells leave room for it (home-app:pt-3). */
+:root:has(meta[name="viewport"][content*="user-scalable=no"]) body::before {
+  @variant home-app {
+    content: "";
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 60;
+    height: 12px;
+    background: var(--home-bar, var(--color-desktop));
+    pointer-events: none;
+  }
+}
+/* White and Black, read from the shell: <html> only gets data-theme once the page is interactive. */
+:root:has([data-theme="light"]) {
+  --home-bar: #f2f2f7;
+}
+:root:has([data-theme="dark"]) {
+  --home-bar: #000;
 }
 
 /* Bigger hit targets on touch screens. */

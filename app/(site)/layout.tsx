@@ -4,8 +4,9 @@ import type { ReactNode } from "react";
 import { Logo } from "@/components/ui";
 import { BUSINESS, USER_GUIDE_PATH } from "@/lib/business";
 
-// Visitors can zoom the public pages to read them (the app screens lock zoom; see app/layout.tsx).
-export const viewport: Viewport = { maximumScale: 5, userScalable: true };
+// Visitors can zoom the public pages to read them (the app screens lock zoom and go edge to edge; see
+// app/layout.tsx).
+export const viewport: Viewport = { maximumScale: 5, userScalable: true, viewportFit: "auto" };
 
 /** Public pages (home, policies): open to everyone, and what PayMongo reviews before going live. */
 export default function SiteLayout({ children }: { children: ReactNode }) {

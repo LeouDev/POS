@@ -360,7 +360,9 @@ export function Register({
           aria-label="Current sale"
           className={cx(
             "min-h-0 flex-col gap-2 ios:gap-3 ios:bg-[var(--card)] ios:p-[18px] ios:pb-[max(18px,env(safe-area-inset-bottom))]",
-            cartOpen ? "window fixed inset-0 z-40 flex overflow-y-auto p-2" : "hidden lg:flex lg:overflow-y-auto",
+            cartOpen
+              ? "window fixed inset-0 z-40 flex overflow-y-auto p-2 pb-[max(8px,env(safe-area-inset-bottom))] home-app:top-3"
+              : "hidden lg:flex lg:overflow-y-auto",
             "ios:lg:m-3 ios:lg:ml-0 ios:lg:rounded-[28px]",
           )}
         >

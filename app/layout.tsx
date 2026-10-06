@@ -16,7 +16,13 @@ export const metadata: Metadata = {
 
 // Like a native app: the app screens (and sign-in, billing) don't pinch- or double-tap-zoom, so a tap
 // at the register never zooms the page. The public site re-enables zoom in app/(site)/layout.tsx.
-export const viewport: Viewport = { themeColor: "#008080", maximumScale: 1, userScalable: false };
+// Edge to edge on iPhone: the taskbar and tab bar pad themselves clear of the home bar (safe-area insets).
+export const viewport: Viewport = {
+  themeColor: "#008080",
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+};
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

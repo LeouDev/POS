@@ -69,7 +69,7 @@ function ClassicShell({ businessName, email, timezone, accessEndsAt, pro, childr
   const current = NAV.find((n) => isActive(pathname, n.href));
 
   return (
-    <div className="flex h-dvh flex-col">
+    <div className="flex h-dvh flex-col home-app:pt-3">
       <a
         href="#main"
         className="btn btn-default absolute top-2 left-2 z-[80] -translate-y-20 focus-visible:translate-y-0"
@@ -176,7 +176,7 @@ function Taskbar({
   const CurrentIcon = current?.icon;
 
   return (
-    <div className="relative flex h-11 flex-none items-center gap-1 border-t border-face-light bg-face px-1 shadow-[inset_0_1px_#fff] lg:h-9">
+    <div className="relative flex h-[calc(44px+env(safe-area-inset-bottom))] flex-none items-center gap-1 border-t border-face-light bg-face px-1 pb-[env(safe-area-inset-bottom)] shadow-[inset_0_1px_#fff] lg:h-[calc(36px+env(safe-area-inset-bottom))]">
       <button
         ref={startRef}
         type="button"
